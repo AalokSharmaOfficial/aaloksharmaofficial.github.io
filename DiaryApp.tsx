@@ -133,13 +133,19 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
   }, [fetchEntries, fetchProfile, keyStatus]);
 
   const filteredEntries = useMemo(() => {
+    // Helper to strip HTML for searching
+    const stripHtml = (html: string) => {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        return doc.body.textContent || "";
+    };
+
     return entries.filter(entry => {
       const entryDate = new Date(entry.created_at);
       entryDate.setHours(0, 0, 0, 0);
 
       const matchesSearchTerm = searchTerm.trim() === '' ||
         entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.content.toLowerCase().includes(searchTerm.toLowerCase());
+        stripHtml(entry.content).toLowerCase().includes(searchTerm.toLowerCase());
       
       let matchesDateRange = true;
       if (startDate) {
@@ -185,17 +191,19 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
         // Update existing entry
         const { error } = await supabase
           .from('diaries')
-          .update({ encrypted_entry, iv })
+          .update({ encrypted_entry, iv, mood: entryData.mood, tags: entryData.tags })
           .eq('id', id);
         if (error) throw error;
         // The date/ownerId doesn't change, so we can just update the content part
-        setEntries(prev => prev.map(e => e.id === id ? { ...e, title: entryData.title, content: entryData.content } : e));
+        setEntries(prev => prev.map(e => e.id === id ? { ...e, ...entryData } : e));
       } else {
         // Create new entry
         const newEntryRecord = {
           owner_id: session.user.id,
           encrypted_entry,
           iv,
+          mood: entryData.mood,
+          tags: entryData.tags,
         };
         const { data, error } = await supabase
           .from('diaries')
@@ -206,8 +214,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
         
         const newEntryForState: DiaryEntry = {
             ...data,
-            title: entryData.title,
-            content: entryData.content
+            ...entryData,
         };
         setEntries(prev => [newEntryForState, ...prev].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
       }
@@ -330,6 +337,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
       <Header 
         session={session}
         profile={profile}
+        entries={entries}
         onNewEntry={() => setViewState({ view: 'new' })}
         onGoHome={handleGoHome}
         currentView={viewState.view}

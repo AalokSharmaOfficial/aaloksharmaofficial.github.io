@@ -1,7 +1,6 @@
-
-
 import React from 'react';
 import { DiaryEntry } from '../types';
+import DOMPurify from 'dompurify';
 
 interface DiaryEntryViewProps {
   entry: DiaryEntry;
@@ -26,11 +25,24 @@ const DiaryEntryView: React.FC<DiaryEntryViewProps> = ({ entry, onEdit, onDelete
             })}
           </p>
         </div>
+         <div className="flex items-center gap-4 mt-3">
+          {entry.mood && <span className="text-3xl" aria-label={`Mood: ${entry.mood}`}>{entry.mood}</span>}
+          {entry.tags && entry.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {entry.tags.map(tag => (
+                <span key={tag} className="text-sm font-medium bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full dark:bg-indigo-900/50 dark:text-indigo-300">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       
-      <div className="prose prose-slate dark:prose-invert max-w-none whitespace-pre-wrap break-words my-6">
-        {entry.content}
-      </div>
+      <div 
+        className="prose prose-slate dark:prose-invert max-w-none my-6"
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(entry.content) }}
+      />
 
       <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-6 flex justify-end gap-3">
         <button

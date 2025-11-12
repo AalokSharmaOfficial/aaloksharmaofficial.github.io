@@ -1,10 +1,11 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import { Session } from '@supabase/supabase-js';
-import { Profile } from '../types';
+import { Profile, DiaryEntry } from '../types';
 
 interface ProfilePanelProps {
   session: Session;
   profile: Profile | null;
+  entries: DiaryEntry[];
   onClose: () => void;
   onSignOut: () => void;
   onUpdateProfile: (updates: { full_name?: string }) => Promise<void>;
@@ -16,6 +17,7 @@ interface ProfilePanelProps {
 const ProfilePanel: React.FC<ProfilePanelProps> = ({
   session,
   profile,
+  entries,
   onClose,
   onSignOut,
   onUpdateProfile,
@@ -44,6 +46,44 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({
       setIsUploading(true);
       await onAvatarUpload(e.target.files[0]);
       setIsUploading(false);
+    }
+  };
+
+  const handleExport = () => {
+    if(entries.length === 0) {
+      alert("You have no entries to export.");
+      return;
+    }
+
+    if (window.confirm('Warning: This exported file will not be encrypted. Please keep it safe on your computer.')) {
+        const fileContent = entries
+            .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) // sort oldest to newest
+            .map(entry => {
+                const date = new Date(entry.created_at).toLocaleString('en-US', {
+                  year: 'numeric', month: 'long', day: 'numeric',
+                  hour: 'numeric', minute: '2-digit', hour12: true
+                });
+                const mood = entry.mood ? `[Mood: ${entry.mood}]` : '';
+                const tags = entry.tags?.length ? `[Tags: ${entry.tags.join(', ')}]` : '';
+                const metadata = [mood, tags].filter(Boolean).join(' | ');
+
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = entry.content;
+                const textContent = tempDiv.textContent || tempDiv.innerText || '';
+
+                return `Date: ${date}\nTitle: ${entry.title}\n${metadata ? `${metadata}\n` : ''}\n---\n${textContent}\n`;
+            })
+            .join('\n============================================================\n\n');
+
+        const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'diary_export.txt';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     }
   };
 
@@ -97,11 +137,14 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({
       </div>
       
       <div className="p-2 space-y-1">
-        <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700/50">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
+        <button 
+          onClick={handleExport}
+          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700/50"
+        >
+           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
           </svg>
-          Settings
+          Export Data
         </button>
 
         <div className="w-full flex items-center justify-between gap-3 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 rounded-md">

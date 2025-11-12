@@ -98,15 +98,25 @@ import { createClient } from '@supabase/supabase-js';
 //
 // 5. (Optional but Recommended) Set up Supabase Storage for avatars.
 /*
-  -- In your Supabase dashboard, go to Storage and create a new PUBLIC bucket named 'avatars'.
-  -- The RLS policies below are for a PRIVATE bucket. For a PUBLIC bucket, you can skip
-  -- the policies, but you must ensure your UI logic only allows users to upload to their own folder.
-  -- The provided application code does this by creating a path with the user's ID.
+  -- Step 1: In your Supabase dashboard, go to Storage and create a new PUBLIC bucket named 'avatars'.
+  --
+  -- Step 2: Add a security policy to allow users to UPLOAD files to their own folder.
+  -- This is a critical security step. Even for a public bucket, you must control who can upload files.
+  -- This policy ensures that an authenticated user can only upload files into a folder path that
+  -- matches their own unique User ID (auth.uid()).
+  --
+  -- Run this in your Supabase SQL Editor:
+  CREATE POLICY "Authenticated users can upload to their own folder"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK ( bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text );
 
-  -- Example RLS Policies for a PRIVATE 'avatars' bucket:
-  CREATE POLICY "Users can view their own avatar" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'avatars' AND owner = auth.uid());
-  CREATE POLICY "Users can upload an avatar" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'avatars' AND owner = auth.uid());
-  CREATE POLICY "Users can update their own avatar" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'avatars' AND owner = auth.uid());
+  -- Why don't we need SELECT, UPDATE, or DELETE policies for this app?
+  --   - SELECT (View): Because the bucket is PUBLIC, anyone with the direct file URL can view the image.
+  --     The app gets this public URL and stores it in the 'profiles' table. No policy is needed.
+  --   - UPDATE / DELETE: The application code doesn't update or delete existing files. When you
+  --     upload a new avatar, it creates a NEW file with a unique name. The old file is simply
+  --     "orphaned" in storage. This is a simple approach that avoids needing more complex policies.
 */
 //
 // NOTE: The previous trigger-based profile creation has been removed.

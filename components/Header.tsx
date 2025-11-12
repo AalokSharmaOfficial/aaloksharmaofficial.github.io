@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ViewState, Profile } from '../types';
+import { ViewState, Profile, DiaryEntry } from '../types';
 import { Session } from '@supabase/supabase-js';
 import ProfilePanel from './ProfilePanel';
 
 interface HeaderProps {
   session: Session;
   profile: Profile | null;
+  entries: DiaryEntry[];
   onNewEntry: () => void;
   onGoHome: () => void;
   currentView: ViewState['view'];

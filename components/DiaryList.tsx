@@ -10,6 +10,11 @@ interface DiaryListProps {
 }
 
 const DiaryList: React.FC<DiaryListProps> = ({ entries, onSelectEntry, totalEntries, onThisDayEntries }) => {
+  const stripHtml = (html: string) => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || "";
+  };
+
   if (totalEntries === 0) {
     return (
       <div className="text-center py-20">
@@ -46,18 +51,30 @@ const DiaryList: React.FC<DiaryListProps> = ({ entries, onSelectEntry, totalEntr
               onClick={() => onSelectEntry(entry.id)}
               className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 cursor-pointer border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600"
             >
-              <div className="flex justify-between items-start">
-                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">{entry.title}</h2>
-                <span className="text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                  {new Date(entry.created_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </span>
+              <div className="flex justify-between items-start gap-4">
+                <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{entry.title}</h2>
+                <div className="text-right">
+                  <span className="text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                    {new Date(entry.created_at).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </span>
+                   {entry.mood && <span className="text-lg block mt-1" aria-label={`Mood: ${entry.mood}`}>{entry.mood}</span>}
+                </div>
               </div>
-              <p className="text-slate-600 dark:text-slate-300 line-clamp-2">
-                {entry.content}
+               {entry.tags && entry.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {entry.tags.map(tag => (
+                    <span key={tag} className="text-xs font-medium bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full dark:bg-indigo-900/50 dark:text-indigo-300">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <p className="text-slate-600 dark:text-slate-300 line-clamp-2 mt-3">
+                {stripHtml(entry.content)}
               </p>
             </div>
           ))}
