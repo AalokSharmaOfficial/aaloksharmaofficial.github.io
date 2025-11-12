@@ -11,11 +11,11 @@ interface DiaryEntryViewProps {
 
 const DiaryEntryView: React.FC<DiaryEntryViewProps> = ({ entry, onEdit, onDelete }) => {
   return (
-    <div className="bg-white p-6 sm:p-8 rounded-lg shadow-md border border-slate-200 animate-fade-in">
-      <div className="border-b border-slate-200 pb-4 mb-4">
+    <div className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 animate-fade-in">
+      <div className="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-          <h1 className="text-3xl font-bold text-slate-900">{entry.title}</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{entry.title}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {new Date(entry.created_at).toLocaleString('en-US', {
               weekday: 'long',
               year: 'numeric',
@@ -28,14 +28,14 @@ const DiaryEntryView: React.FC<DiaryEntryViewProps> = ({ entry, onEdit, onDelete
         </div>
       </div>
       
-      <div className="prose prose-slate max-w-none whitespace-pre-wrap break-words my-6">
+      <div className="prose prose-slate dark:prose-invert max-w-none whitespace-pre-wrap break-words my-6">
         {entry.content}
       </div>
 
-      <div className="border-t border-slate-200 pt-4 mt-6 flex justify-end gap-3">
+      <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-6 flex justify-end gap-3">
         <button
           onClick={onEdit}
-          className="flex items-center gap-2 bg-slate-100 text-slate-700 font-semibold px-4 py-2 rounded-lg hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+          className="flex items-center gap-2 bg-slate-100 text-slate-700 font-semibold px-4 py-2 rounded-lg hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 transition-colors"
         >
            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />

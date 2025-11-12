@@ -38,14 +38,14 @@ const PasswordPrompt: React.FC<PasswordPromptProps> = ({ onSuccess, session }) =
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100">
-        <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900">
+        <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-slate-800 rounded-lg shadow-md">
             <div className="text-center">
-                <h1 className="text-2xl font-bold text-slate-800">Unlock Your Diary</h1>
-                <p className="text-slate-500 mt-2">For your security, please enter your password to continue.</p>
+                <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Unlock Your Diary</h1>
+                <p className="text-slate-500 dark:text-slate-400 mt-2">For your security, please enter your password to continue.</p>
             </div>
 
-            <p className="text-xs text-center text-slate-600 bg-slate-50 p-3 rounded-md border">
+            <p className="text-xs text-center text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-md border dark:border-slate-700">
                Your diary is end-to-end encrypted. We need your password to securely decrypt your entries.
             </p>
 
@@ -58,7 +58,7 @@ const PasswordPrompt: React.FC<PasswordPromptProps> = ({ onSuccess, session }) =
                 value={password}
                 required
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
                 aria-label="Password for decryption"
             />
             <button type="submit" disabled={loading} className="w-full px-4 py-2 font-semibold text-white bg-indigo-500 rounded-md hover:bg-indigo-600 disabled:bg-indigo-300">

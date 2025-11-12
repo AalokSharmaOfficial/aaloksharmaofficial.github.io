@@ -28,13 +28,13 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ entry, onSave, onCancel }) =>
   };
 
   return (
-    <div className="bg-white p-6 sm:p-8 rounded-lg shadow-md border border-slate-200 animate-fade-in">
-      <h1 className="text-3xl font-bold text-slate-900 mb-6 border-b pb-4">
+    <div className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 animate-fade-in">
+      <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-6 border-b dark:border-slate-700 pb-4">
         {entry ? 'Edit Entry' : 'New Entry'}
       </h1>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-1">
+          <label htmlFor="title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
             Title
           </label>
           <input
@@ -42,13 +42,13 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ entry, onSave, onCancel }) =>
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-400"
             placeholder="A beautiful day"
             required
           />
         </div>
         <div>
-          <label htmlFor="content" className="block text-sm font-medium text-slate-700 mb-1">
+          <label htmlFor="content" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
             Content
           </label>
           <textarea
@@ -56,16 +56,16 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({ entry, onSave, onCancel }) =>
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={15}
-            className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            className="block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-400"
             placeholder="Write about your day..."
             required
           />
         </div>
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        <div className="flex justify-end gap-3 pt-4 border-t dark:border-slate-700">
           <button
             type="button"
             onClick={onCancel}
-            className="bg-slate-100 text-slate-700 font-semibold px-4 py-2 rounded-lg hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors"
+            className="bg-slate-100 text-slate-700 font-semibold px-4 py-2 rounded-lg hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 transition-colors"
           >
             Cancel
           </button>

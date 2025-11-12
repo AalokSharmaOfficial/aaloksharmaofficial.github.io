@@ -13,6 +13,8 @@ export interface Profile {
   salt: string;
   key_check_value: string;
   key_check_iv: string;
+  full_name?: string;
+  avatar_url?: string;
 }
 
 export type ViewState = 

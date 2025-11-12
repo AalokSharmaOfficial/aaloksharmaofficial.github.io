@@ -8,6 +8,7 @@ import { CryptoProvider } from './contexts/CryptoContext';
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
   useEffect(() => {
     const getSession = async () => {
@@ -25,18 +26,33 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+  };
+
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-slate-500">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <p className="text-slate-500 dark:text-slate-400">Loading...</p>
       </div>
     );
   }
 
   return (
     <CryptoProvider>
-      <div className="min-h-screen bg-slate-50 font-sans">
-        {!session ? <Auth /> : <DiaryApp key={session.user.id} session={session} />}
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-sans">
+        {!session ? <Auth /> : <DiaryApp key={session.user.id} session={session} theme={theme} onToggleTheme={toggleTheme} />}
       </div>
     </CryptoProvider>
   );

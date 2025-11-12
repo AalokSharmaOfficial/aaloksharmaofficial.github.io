@@ -90,6 +90,25 @@ import { createClient } from '@supabase/supabase-js';
   USING (auth.uid() = owner_id);
 */
 //
+// 4. (Optional but Recommended) Add columns for profile name and avatar.
+/*
+  ALTER TABLE public.profiles ADD COLUMN full_name text;
+  ALTER TABLE public.profiles ADD COLUMN avatar_url text;
+*/
+//
+// 5. (Optional but Recommended) Set up Supabase Storage for avatars.
+/*
+  -- In your Supabase dashboard, go to Storage and create a new PUBLIC bucket named 'avatars'.
+  -- The RLS policies below are for a PRIVATE bucket. For a PUBLIC bucket, you can skip
+  -- the policies, but you must ensure your UI logic only allows users to upload to their own folder.
+  -- The provided application code does this by creating a path with the user's ID.
+
+  -- Example RLS Policies for a PRIVATE 'avatars' bucket:
+  CREATE POLICY "Users can view their own avatar" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'avatars' AND owner = auth.uid());
+  CREATE POLICY "Users can upload an avatar" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'avatars' AND owner = auth.uid());
+  CREATE POLICY "Users can update their own avatar" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'avatars' AND owner = auth.uid());
+*/
+//
 // NOTE: The previous trigger-based profile creation has been removed.
 // The application now handles creating the user profile on their first login,
 // which is a more robust method.

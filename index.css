@@ -16,3 +16,14 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #64748b; /* slate-500 */
 }
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+    background: #0f172a; /* slate-900 */
+}
+.dark ::-webkit-scrollbar-thumb {
+    background: #475569; /* slate-600 */
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b; /* slate-500 */
+}

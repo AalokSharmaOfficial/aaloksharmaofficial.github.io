@@ -55,14 +55,14 @@ const InitializeEncryption: React.FC<InitializeEncryptionProps> = ({ onSuccess, 
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100">
-        <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900">
+        <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-slate-800 rounded-lg shadow-md">
             <div className="text-center">
-                <h1 className="text-2xl font-bold text-slate-800">Final Security Step</h1>
-                <p className="text-slate-500 mt-2">To complete your secure setup, please create your password.</p>
+                <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Final Security Step</h1>
+                <p className="text-slate-500 dark:text-slate-400 mt-2">To complete your secure setup, please create your password.</p>
             </div>
 
-            <p className="text-xs text-center text-slate-600 bg-slate-50 p-3 rounded-md border">
+            <p className="text-xs text-center text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-md border dark:border-slate-700">
                 This is required to create your unique encryption key. Your password is never stored, and this one-time step ensures your diary remains private and end-to-end encrypted.
             </p>
 
@@ -76,7 +76,7 @@ const InitializeEncryption: React.FC<InitializeEncryptionProps> = ({ onSuccess, 
                 required
                 minLength={6}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
             />
             <button type="submit" disabled={loading} className="w-full px-4 py-2 font-semibold text-white bg-indigo-500 rounded-md hover:bg-indigo-600 disabled:bg-indigo-300">
                 {loading ? 'Securing...' : 'Initialize Diary'}

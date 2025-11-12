@@ -1,7 +1,11 @@
-import React from 'react';
-import { ViewState } from '../types';
+import React, { useState, useRef, useEffect } from 'react';
+import { ViewState, Profile } from '../types';
+import { Session } from '@supabase/supabase-js';
+import ProfilePanel from './ProfilePanel';
 
 interface HeaderProps {
+  session: Session;
+  profile: Profile | null;
   onNewEntry: () => void;
   onGoHome: () => void;
   currentView: ViewState['view'];
@@ -13,25 +17,45 @@ interface HeaderProps {
   endDate: string;
   onEndDateChange: (date: string) => void;
   onSignOut: () => void;
+  onUpdateProfile: (updates: { full_name?: string; avatar_url?: string; }) => Promise<void>;
+  onAvatarUpload: (file: File) => Promise<void>;
+  theme: string;
+  onToggleTheme: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ 
-  onNewEntry, 
-  onGoHome, 
-  currentView,
-  onToggleView,
-  searchTerm,
-  onSearchTermChange,
-  startDate,
-  onStartDateChange,
-  endDate,
-  onEndDateChange,
-  onSignOut,
-}) => {
+const Header: React.FC<HeaderProps> = (props) => {
+  const { 
+    session,
+    profile,
+    onNewEntry, 
+    onGoHome, 
+    currentView,
+    onToggleView,
+    searchTerm,
+    onSearchTermChange,
+    startDate,
+    onStartDateChange,
+    endDate,
+    onEndDateChange,
+  } = props;
+  
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const showSearch = currentView === 'list';
 
   return (
-    <header className="bg-white shadow-md sticky top-0 z-10">
+    <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-md dark:shadow-none border-b border-transparent dark:border-slate-800 sticky top-0 z-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-4 flex justify-between items-center flex-wrap gap-4">
         <div 
           className="flex items-center gap-3 cursor-pointer group"
@@ -40,7 +64,7 @@ const Header: React.FC<HeaderProps> = ({
           <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-500 group-hover:text-indigo-600 transition-colors" viewBox="0 0 20 20" fill="currentColor">
             <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
           </svg>
-          <h1 className="text-2xl font-bold text-slate-800 group-hover:text-slate-900 transition-colors">
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
             Diary
           </h1>
         </div>
@@ -57,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({
                   placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => onSearchTermChange(e.target.value)}
-                  className="pl-8 pr-2 py-1.5 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm w-32 sm:w-40"
+                  className="pl-8 pr-2 py-1.5 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm w-32 sm:w-40 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:placeholder-slate-500"
                   aria-label="Search diary entries"
                 />
               </div>
@@ -67,15 +91,15 @@ const Header: React.FC<HeaderProps> = ({
                   type="date"
                   value={startDate}
                   onChange={(e) => onStartDateChange(e.target.value)}
-                  className="border border-slate-300 rounded-md px-2 py-1.5 text-sm text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="border border-slate-300 rounded-md px-2 py-1.5 text-sm text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:[color-scheme:dark]"
                   aria-label="Start date for search"
                 />
-                <span className="text-slate-500 text-sm">to</span>
+                <span className="text-slate-500 dark:text-slate-400 text-sm">to</span>
                 <input 
                   type="date"
                   value={endDate}
                   onChange={(e) => onEndDateChange(e.target.value)}
-                  className="border border-slate-300 rounded-md px-2 py-1.5 text-sm text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="border border-slate-300 rounded-md px-2 py-1.5 text-sm text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:[color-scheme:dark]"
                   aria-label="End date for search"
                 />
               </div>
@@ -85,7 +109,7 @@ const Header: React.FC<HeaderProps> = ({
           {(currentView === 'list' || currentView === 'calendar') && (
             <button
               onClick={onToggleView}
-              className="p-2 rounded-md hover:bg-slate-100 text-slate-500 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              className="p-2 rounded-md hover:bg-slate-100 text-slate-500 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:hover:bg-slate-800 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors"
               aria-label={currentView === 'list' ? 'Switch to Calendar View' : 'Switch to List View'}
             >
               {currentView === 'list' ? (
@@ -109,15 +133,32 @@ const Header: React.FC<HeaderProps> = ({
             </svg>
             <span className="hidden sm:inline">New Entry</span>
           </button>
-           <button
-            onClick={onSignOut}
-            className="p-2 rounded-md hover:bg-slate-100 text-slate-500 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-            aria-label="Sign Out"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </button>
+          
+          <div className="relative" ref={profileMenuRef}>
+            <button 
+              onClick={() => setIsProfileOpen(prev => !prev)}
+              className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              aria-expanded={isProfileOpen}
+              aria-haspopup="true"
+              aria-label="Open profile menu"
+            >
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="User avatar" className="w-full h-full object-cover" />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-full w-full text-slate-500 dark:text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                </svg>
+              )}
+            </button>
+            {isProfileOpen && (
+              <ProfilePanel 
+                session={session} 
+                profile={profile} 
+                onClose={() => setIsProfileOpen(false)}
+                {...props}
+              />
+            )}
+          </div>
         </div>
       </div>
     </header>

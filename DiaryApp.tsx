@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabaseClient';
-import { DiaryEntry, ViewState } from './types';
+import { DiaryEntry, ViewState, Profile } from './types';
 import Header from './components/Header';
 import DiaryList from './components/DiaryList';
 import DiaryEntryView from './components/DiaryEntryView';
@@ -13,11 +13,13 @@ import PasswordPrompt from './components/PasswordPrompt';
 
 interface DiaryAppProps {
   session: Session;
+  theme: string;
+  onToggleTheme: () => void;
 }
 
 type KeyStatus = 'checking' | 'needed' | 'reauth' | 'ready';
 
-const DiaryApp: React.FC<DiaryAppProps> = ({ session }) => {
+const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) => {
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewState, setViewState] = useState<ViewState>({ view: 'list' });
@@ -26,6 +28,8 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session }) => {
   const [endDate, setEndDate] = useState('');
   const { key, setKey, encrypt, decrypt } = useCrypto();
   const [keyStatus, setKeyStatus] = useState<KeyStatus>('checking');
+  const [profile, setProfile] = useState<Profile | null>(null);
+
 
   useEffect(() => {
     const checkKeyStatus = async () => {
@@ -64,6 +68,21 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session }) => {
     setKey(newKey);
     setKeyStatus('ready');
   };
+  
+  const fetchProfile = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      if (error) throw error;
+      setProfile(data as Profile);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    }
+  }, [session.user.id]);
+
 
   const fetchEntries = useCallback(async () => {
     if (!key) return;
@@ -109,8 +128,9 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session }) => {
   useEffect(() => {
     if (keyStatus === 'ready') {
       fetchEntries();
+      fetchProfile();
     }
-  }, [fetchEntries, keyStatus]);
+  }, [fetchEntries, fetchProfile, keyStatus]);
 
   const filteredEntries = useMemo(() => {
     return entries.filter(entry => {
@@ -212,6 +232,39 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session }) => {
     }
   }, []);
   
+    const handleUpdateProfile = useCallback(async (updates: { full_name?: string, avatar_url?: string }) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', session.user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      setProfile(data as Profile);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("Failed to update profile.");
+    }
+  }, [session.user.id]);
+
+  const handleAvatarUpload = useCallback(async (file: File) => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${session.user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      await handleUpdateProfile({ avatar_url: data.publicUrl });
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      alert("Failed to upload avatar.");
+    }
+  }, [session.user.id, handleUpdateProfile]);
+
   const handleSignOut = async () => {
       await supabase.auth.signOut();
   };
@@ -231,8 +284,8 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session }) => {
         case 'checking':
              return (
                 <div className="text-center py-20">
-                    <h2 className="text-2xl font-semibold text-slate-600">Initializing Secure Session...</h2>
-                    <p className="mt-2 text-slate-500">Please wait while we prepare your encrypted diary. If this takes too long, please try refreshing the page.</p>
+                    <h2 className="text-2xl font-semibold text-slate-600 dark:text-slate-300">Initializing Secure Session...</h2>
+                    <p className="mt-2 text-slate-500 dark:text-slate-400">Please wait while we prepare your encrypted diary. If this takes too long, please try refreshing the page.</p>
                 </div>
             );
         case 'needed':
@@ -240,7 +293,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session }) => {
         case 'reauth':
             return <PasswordPrompt onSuccess={handleKeyReady} session={session} />;
         case 'ready':
-            if (loading) return <p className="text-center text-slate-500 mt-8">Loading your encrypted diary...</p>;
+            if (loading) return <p className="text-center text-slate-500 dark:text-slate-400 mt-8">Loading your encrypted diary...</p>;
     
             switch (viewState.view) {
               case 'entry':
@@ -275,6 +328,8 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session }) => {
   return (
     <>
       <Header 
+        session={session}
+        profile={profile}
         onNewEntry={() => setViewState({ view: 'new' })}
         onGoHome={handleGoHome}
         currentView={viewState.view}
@@ -286,6 +341,10 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session }) => {
         endDate={endDate}
         onEndDateChange={setEndDate}
         onSignOut={handleSignOut}
+        onUpdateProfile={handleUpdateProfile}
+        onAvatarUpload={handleAvatarUpload}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
       />
       <main className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
         {renderContent()}
