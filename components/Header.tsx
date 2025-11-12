@@ -25,7 +25,6 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = (props) => {
   const { 
-    session,
     profile,
     onNewEntry, 
     onGoHome, 
@@ -44,6 +43,7 @@ const Header: React.FC<HeaderProps> = (props) => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Fix: Corrected a typo where `profileMenu` was used instead of `profileMenuRef`.
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
         setIsProfileOpen(false);
       }
