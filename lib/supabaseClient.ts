@@ -37,7 +37,7 @@ import { createClient } from '@supabase/supabase-js';
 */
 //
 // 3. Set up Row Level Security (RLS) to protect user data.
-//    These policies are CRITICAL for security and fix the sign-up error.
+//    These policies are CRITICAL for security.
 //    They ensure that users can only access their own data.
 //    This script is idempotent, meaning it can be run multiple times without error.
 /*
@@ -58,7 +58,6 @@ import { createClient } from '@supabase/supabase-js';
   TO authenticated
   USING (auth.uid() = id);
   
-  -- Add UPDATE policy for profiles for first-time login
   DROP POLICY IF EXISTS "Users can update their own profile." ON public.profiles;
   CREATE POLICY "Users can update their own profile."
   ON public.profiles FOR UPDATE
@@ -91,30 +90,10 @@ import { createClient } from '@supabase/supabase-js';
   USING (auth.uid() = owner_id);
 */
 //
-// 4. Create a trigger to automatically create a profile when a new user signs up.
-//    This makes the application more robust.
-/*
-  -- Create a function to be called by the trigger
-  CREATE OR REPLACE FUNCTION public.handle_new_user()
-  RETURNS TRIGGER AS $$
-  BEGIN
-    INSERT INTO public.profiles (id, salt, key_check_value, key_check_iv)
-    VALUES (
-      new.id,
-      'INITIAL_SALT', -- Placeholder salt
-      'INITIAL_VALUE', -- Placeholder check value
-      'INITIAL_IV' -- Placeholder IV
-    );
-    RETURN new;
-  END;
-  $$ LANGUAGE plpgsql SECURITY DEFINER;
-
-  -- Create the trigger on the auth.users table
-  DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-  CREATE TRIGGER on_auth_user_created
-    AFTER INSERT ON auth.users
-    FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
-*/
+// NOTE: The previous trigger-based profile creation has been removed.
+// The application now handles creating the user profile on their first login,
+// which is a more robust method.
+//
 // =================================================================================
 
 

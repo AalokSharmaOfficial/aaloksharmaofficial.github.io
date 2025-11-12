@@ -31,12 +31,18 @@ const InitializeEncryption: React.FC<InitializeEncryptionProps> = ({ onSuccess, 
         const key = await deriveKey(password, salt);
         const { iv: key_check_iv, data: key_check_value } = await encrypt(key, KEY_CHECK_STRING);
 
-        const { error: updateError } = await supabase
+        // Instead of updating, we now insert the new profile directly.
+        // The RLS policy ensures a user can only insert a profile for themselves.
+        const { error: insertError } = await supabase
           .from('profiles')
-          .update({ salt, key_check_value, key_check_iv })
-          .eq('id', user.id);
+          .insert({ 
+            id: user.id, 
+            salt, 
+            key_check_value, 
+            key_check_iv 
+          });
         
-        if (updateError) throw updateError;
+        if (insertError) throw insertError;
         
         onSuccess(key);
 
@@ -53,7 +59,7 @@ const InitializeEncryption: React.FC<InitializeEncryptionProps> = ({ onSuccess, 
         <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
             <div className="text-center">
                 <h1 className="text-2xl font-bold text-slate-800">Final Security Step</h1>
-                <p className="text-slate-500 mt-2">To complete your secure setup, please enter your password one more time.</p>
+                <p className="text-slate-500 mt-2">To complete your secure setup, please create your password.</p>
             </div>
 
             <p className="text-xs text-center text-slate-600 bg-slate-50 p-3 rounded-md border">

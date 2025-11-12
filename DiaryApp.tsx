@@ -37,21 +37,18 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session }) => {
       try {
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('salt')
+          .select('id')
           .eq('id', session.user.id)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
 
-        if (profile && profile.salt === 'INITIAL_SALT') {
-          // New user who has confirmed email but not set up encryption key yet.
+        if (!profile) {
+          // Profile does not exist. This is a new user who needs to set up encryption.
           setKeyStatus('needed');
-        } else if (profile) {
-          // Existing user who has refreshed the page. Session exists but in-memory key is lost.
-          // Prompt for password to re-derive the key.
-          setKeyStatus('reauth');
         } else {
-            throw new Error("User profile not found. This should not happen.");
+          // Profile exists. This is an existing user who needs to enter their password.
+          setKeyStatus('reauth');
         }
       } catch (error) {
         console.error("Error checking profile for initialization:", error);
