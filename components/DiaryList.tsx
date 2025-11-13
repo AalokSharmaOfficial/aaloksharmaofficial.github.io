@@ -1,6 +1,7 @@
 import React from 'react';
 import { DiaryEntry, Profile } from '../types';
 import OnThisDay from './OnThisDay';
+import { formatTimestamp } from '../lib/dateUtils';
 
 interface DiaryListProps {
   entries: DiaryEntry[];
@@ -64,12 +65,11 @@ const DiaryList: React.FC<DiaryListProps> = ({ entries, onSelectEntry, totalEntr
                   <div className="flex justify-between items-start gap-4">
                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{entry.title}</h2>
                     <div className="text-right">
-                      <span className="text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                        {new Date(entry.created_at).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
+                      <span 
+                        className="text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap"
+                        title={new Date(entry.created_at).toLocaleString()}
+                      >
+                        {formatTimestamp(entry.created_at)}
                       </span>
                       {entry.mood && <span className="text-lg block mt-1" aria-label={`Mood: ${entry.mood}`}>{entry.mood}</span>}
                     </div>

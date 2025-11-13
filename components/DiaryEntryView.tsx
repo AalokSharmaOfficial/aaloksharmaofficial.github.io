@@ -1,6 +1,7 @@
 import React from 'react';
 import { DiaryEntry } from '../types';
 import DOMPurify from 'dompurify';
+import { formatDistanceToNow } from 'date-fns';
 
 interface DiaryEntryViewProps {
   entry: DiaryEntry;
@@ -9,20 +10,24 @@ interface DiaryEntryViewProps {
 }
 
 const DiaryEntryView: React.FC<DiaryEntryViewProps> = ({ entry, onEdit, onDelete }) => {
+  const createdAt = new Date(entry.created_at);
+  const fullDate = createdAt.toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+  const relativeTime = formatDistanceToNow(createdAt, { addSuffix: true });
+
   return (
     <div className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 animate-fade-in">
       <div className="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{entry.title}</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            {new Date(entry.created_at).toLocaleString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit'
-            })}
+            {fullDate} ({relativeTime})
           </p>
         </div>
          <div className="flex items-center gap-4 mt-3">

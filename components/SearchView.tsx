@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { DiaryEntry } from '../types';
+import { formatTimestamp } from '../lib/dateUtils';
 
 interface SearchViewProps {
   entries: DiaryEntry[];
@@ -178,8 +179,11 @@ const SearchView: React.FC<SearchViewProps> = ({ entries, onSelectEntry }) => {
                   <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 line-clamp-1">{entry.title}</h3>
                   {entry.mood && <span className="text-2xl" aria-label={`Mood: ${entry.mood}`}>{entry.mood}</span>}
                 </div>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 mb-3">
-                  {new Date(entry.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                <p 
+                  className="text-xs text-slate-400 dark:text-slate-500 mt-1 mb-3"
+                  title={new Date(entry.created_at).toLocaleString()}
+                >
+                  {formatTimestamp(entry.created_at)}
                 </p>
                 <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-3 flex-grow">
                   {stripHtml(entry.content)}
