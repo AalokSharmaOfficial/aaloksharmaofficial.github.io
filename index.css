@@ -27,3 +27,36 @@
 .dark ::-webkit-scrollbar-thumb:hover {
     background: #64748b; /* slate-500 */
 }
+
+
+/* Custom styles for React Quill to match the new design */
+.prose-editor .ql-toolbar {
+  display: none; /* Hide default toolbar as we use a custom one */
+}
+
+.prose-editor .ql-container {
+  border: none !important;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.prose-editor .ql-editor {
+  min-height: 200px;
+  max-height: 40vh;
+  padding: 0.75rem 1rem;
+  color: #334155; /* slate-700 */
+  line-height: 1.6;
+}
+
+.dark .prose-editor .ql-editor {
+  color: #cbd5e1; /* slate-300 */
+}
+
+.prose-editor .ql-editor.ql-blank::before {
+  color: #94a3b8; /* slate-400 */
+  font-style: normal;
+  left: 1rem;
+}
+.dark .prose-editor .ql-editor.ql-blank::before {
+  color: #64748b; /* slate-500 */
+}

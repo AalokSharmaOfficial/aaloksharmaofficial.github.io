@@ -175,7 +175,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
     }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [entries]);
 
-  const handleSaveEntry = useCallback(async (entryData: Omit<DiaryEntry, 'id' | 'owner_id' | 'created_at'>, id?: string) => {
+  const handleSaveEntry = useCallback(async (entryData: Omit<DiaryEntry, 'id' | 'owner_id' | 'created_at'> & { created_at: string }, id?: string) => {
     if (!key) {
         alert("Security session expired. Please log in again.");
         return;
@@ -195,7 +195,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
           .eq('id', id);
         if (error) throw error;
         // The date/ownerId doesn't change, so we can just update the content part
-        setEntries(prev => prev.map(e => e.id === id ? { ...e, ...entryData } : e));
+        setEntries(prev => prev.map(e => e.id === id ? { ...e, title: entryData.title, content: entryData.content, mood: entryData.mood, tags: entryData.tags } : e));
       } else {
         // Create new entry
         const newEntryRecord = {
@@ -204,6 +204,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
           iv,
           mood: entryData.mood,
           tags: entryData.tags,
+          created_at: entryData.created_at,
         };
         const { data, error } = await supabase
           .from('diaries')
@@ -214,7 +215,10 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
         
         const newEntryForState: DiaryEntry = {
             ...data,
-            ...entryData,
+            title: entryData.title,
+            content: entryData.content,
+            mood: entryData.mood,
+            tags: entryData.tags,
         };
         setEntries(prev => [newEntryForState, ...prev].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
       }
@@ -286,52 +290,53 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
     setViewState({ view: 'list' });
   };
 
-  const renderContent = () => {
+  if (keyStatus !== 'ready') {
+    let content;
     switch (keyStatus) {
         case 'checking':
-             return (
+             content = (
                 <div className="text-center py-20">
                     <h2 className="text-2xl font-semibold text-slate-600 dark:text-slate-300">Initializing Secure Session...</h2>
                     <p className="mt-2 text-slate-500 dark:text-slate-400">Please wait while we prepare your encrypted diary. If this takes too long, please try refreshing the page.</p>
                 </div>
             );
+            break;
         case 'needed':
-            return <InitializeEncryption onSuccess={handleKeyReady} session={session} />;
+            content = <InitializeEncryption onSuccess={handleKeyReady} session={session} />;
+            break;
         case 'reauth':
-            return <PasswordPrompt onSuccess={handleKeyReady} session={session} />;
-        case 'ready':
-            if (loading) return <p className="text-center text-slate-500 dark:text-slate-400 mt-8">Loading your encrypted diary...</p>;
-    
-            switch (viewState.view) {
-              case 'entry':
-                const entryToView = entries.find(e => e.id === viewState.id);
-                if (!entryToView) return <p>Entry not found.</p>;
-                return <DiaryEntryView entry={entryToView} onEdit={() => setViewState({ view: 'edit', id: viewState.id })} onDelete={() => handleDeleteEntry(viewState.id)} />;
-              case 'edit':
-                const entryToEdit = entries.find(e => e.id === viewState.id);
-                if (!entryToEdit) return <p>Entry not found.</p>;
-                return <DiaryEditor entry={entryToEdit} onSave={handleSaveEntry} onCancel={() => setViewState({ view: 'entry', id: viewState.id })} />;
-              case 'new':
-                return <DiaryEditor onSave={handleSaveEntry} onCancel={() => setViewState({ view: 'list' })} />;
-              case 'calendar':
-                return <CalendarView entries={entries} onSelectDate={handleDateSelect} />;
-              case 'list':
-              default:
-                return <DiaryList entries={filteredEntries} totalEntries={entries.length} onThisDayEntries={onThisDayEntries} onSelectEntry={(id) => setViewState({ view: 'entry', id })} />;
-            }
+            content = <PasswordPrompt onSuccess={handleKeyReady} session={session} />;
+            break;
         default:
-             return <p>An unexpected error occurred.</p>
+             content = <p>An unexpected error occurred.</p>
     }
-  };
-  
-  if (keyStatus !== 'ready') {
     return (
       <main className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
-        {renderContent()}
+        {content}
       </main>
     );
   }
 
+  const renderMainView = () => {
+    if (loading) return <p className="text-center text-slate-500 dark:text-slate-400 mt-8">Loading your encrypted diary...</p>;
+
+    switch (viewState.view) {
+      case 'entry':
+        const entryToView = entries.find(e => e.id === viewState.id);
+        if (!entryToView) return <p>Entry not found.</p>;
+        return <DiaryEntryView entry={entryToView} onEdit={() => setViewState({ view: 'edit', id: viewState.id })} onDelete={() => handleDeleteEntry(viewState.id)} />;
+      case 'calendar':
+        return <CalendarView entries={entries} onSelectDate={handleDateSelect} />;
+      case 'list':
+      case 'new':
+      case 'edit':
+      default:
+        return <DiaryList entries={filteredEntries} totalEntries={entries.length} onThisDayEntries={onThisDayEntries} onSelectEntry={(id) => setViewState({ view: 'entry', id })} />;
+    }
+  };
+
+  const entryToEdit = viewState.view === 'edit' ? entries.find(e => e.id === viewState.id) : undefined;
+  
   return (
     <>
       <Header 
@@ -355,8 +360,30 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
         onToggleTheme={onToggleTheme}
       />
       <main className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
-        {renderContent()}
+        {renderMainView()}
       </main>
+
+      {(viewState.view === 'new' || (viewState.view === 'edit' && entryToEdit)) && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 flex items-center justify-center p-4 animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              if (viewState.view === 'new') setViewState({ view: 'list' });
+              else if (viewState.view === 'edit') setViewState({ view: 'entry', id: viewState.id });
+            }
+          }}
+        >
+          <DiaryEditor
+            key={viewState.view === 'edit' ? viewState.id : 'new'}
+            entry={entryToEdit}
+            onSave={handleSaveEntry}
+            onCancel={() => {
+              if (viewState.view === 'new') setViewState({ view: 'list' });
+              else if (viewState.view === 'edit') setViewState({ view: 'entry', id: viewState.id });
+            }}
+          />
+        </div>
+      )}
     </>
   );
 };
