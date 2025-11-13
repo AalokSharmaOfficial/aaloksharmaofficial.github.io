@@ -1,14 +1,11 @@
-import React, { useState, useEffect, useMemo, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { DiaryEntry } from '../types';
 import ReactQuill from 'react-quill';
 import { useToast } from '../contexts/ToastContext';
-import DatePickerPopup from './DatePickerPopup';
 
 interface DiaryEditorProps {
   entry?: DiaryEntry;
   onSave: (entryData: Omit<DiaryEntry, 'id' | 'owner_id'>) => void;
-  onCancel: () => void;
-  onStatusChange: (status: 'encrypting' | 'synced' | 'error') => void;
   onWordCountChange: (count: number) => void;
   onCharacterCountChange: (count: number) => void;
 }
@@ -17,16 +14,12 @@ export interface EditorHandle {
   save: () => void;
 }
 
-const MAX_CHARS = 20000;
-
-const DiaryEditor = forwardRef<EditorHandle, DiaryEditorProps>(({ entry, onSave, onCancel, onStatusChange, onWordCountChange, onCharacterCountChange }, ref) => {
+const DiaryEditor = forwardRef<EditorHandle, DiaryEditorProps>(({ entry, onSave, onWordCountChange, onCharacterCountChange }, ref) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [entryDate, setEntryDate] = useState(new Date());
 
   const quillRef = useRef<ReactQuill>(null);
-  const datePickerTriggerRef = useRef<HTMLButtonElement>(null);
-  const [isDatePickerOpen, setDatePickerOpen] = useState(false);
   
   const { addToast } = useToast();
 

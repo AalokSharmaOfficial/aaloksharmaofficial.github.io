@@ -139,6 +139,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
 
   const handleSaveEntry = useCallback(async (entryData: Omit<DiaryEntry, 'id' | 'owner_id'>) => {
     if (!key) { addToast("Security session expired.", "error"); return; }
+    if (!editingEntry) { addToast("Cannot save: no entry is currently being edited.", "error"); return; }
     
     setSaveStatus('encrypting');
     try {
@@ -342,8 +343,6 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
                 key={typeof editingEntry === 'object' ? editingEntry.id : 'new'}
                 entry={typeof editingEntry === 'object' ? editingEntry : undefined}
                 onSave={handleSaveEntry}
-                onCancel={handleCancelEdit}
-                onStatusChange={setSaveStatus}
                 onWordCountChange={setWordCount}
                 onCharacterCountChange={setCharacterCount}
               />
