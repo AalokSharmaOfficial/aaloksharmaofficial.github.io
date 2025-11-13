@@ -7,6 +7,7 @@ import DiaryList from './components/DiaryList';
 import DiaryEntryView from './components/DiaryEntryView';
 import DiaryEditor from './components/DiaryEditor';
 import CalendarView from './components/CalendarView';
+import SearchView from './components/SearchView';
 import { useCrypto } from './contexts/CryptoContext';
 import InitializeEncryption from './components/InitializeEncryption';
 import PasswordPrompt from './components/PasswordPrompt';
@@ -23,7 +24,6 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewState, setViewState] = useState<ViewState>({ view: 'list' });
-  const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const { key, setKey, encrypt, decrypt } = useCrypto();
@@ -132,20 +132,14 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
     }
   }, [fetchEntries, fetchProfile, keyStatus]);
 
-  const filteredEntries = useMemo(() => {
-    // Helper to strip HTML for searching
-    const stripHtml = (html: string) => {
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        return doc.body.textContent || "";
-    };
-
+  const filteredEntriesForList = useMemo(() => {
+    if (!startDate && !endDate) {
+      return entries;
+    }
+    
     return entries.filter(entry => {
       const entryDate = new Date(entry.created_at);
       entryDate.setHours(0, 0, 0, 0);
-
-      const matchesSearchTerm = searchTerm.trim() === '' ||
-        entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        stripHtml(entry.content).toLowerCase().includes(searchTerm.toLowerCase());
       
       let matchesDateRange = true;
       if (startDate) {
@@ -159,9 +153,9 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
         if (entryDate > end) matchesDateRange = false;
       }
 
-      return matchesSearchTerm && matchesDateRange;
+      return matchesDateRange;
     });
-  }, [entries, searchTerm, startDate, endDate]);
+  }, [entries, startDate, endDate]);
   
   const onThisDayEntries = useMemo(() => {
     const today = new Date();
@@ -281,9 +275,10 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
   };
   const handleGoHome = () => {
     setViewState({ view: 'list' });
-    setSearchTerm(''); setStartDate(''); setEndDate('');
+    setStartDate(''); setEndDate('');
   };
-  const handleToggleView = () => setViewState(v => ({ view: v.view === 'list' ? 'calendar' : 'list' }));
+  const handleGoToSearch = () => setViewState({ view: 'search' });
+  const handleToggleView = () => setViewState(v => ({ view: v.view === 'list' || v.view === 'search' ? 'calendar' : 'list' }));
   const handleDateSelect = (date: Date) => {
     const isoDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
     setStartDate(isoDate); setEndDate(isoDate);
@@ -327,11 +322,13 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
         return <DiaryEntryView entry={entryToView} onEdit={() => setViewState({ view: 'edit', id: viewState.id })} onDelete={() => handleDeleteEntry(viewState.id)} />;
       case 'calendar':
         return <CalendarView entries={entries} onSelectDate={handleDateSelect} />;
+      case 'search':
+        return <SearchView entries={entries} onSelectEntry={(id) => setViewState({ view: 'entry', id })} />;
       case 'list':
       case 'new':
       case 'edit':
       default:
-        return <DiaryList entries={filteredEntries} totalEntries={entries.length} onThisDayEntries={onThisDayEntries} onSelectEntry={(id) => setViewState({ view: 'entry', id })} />;
+        return <DiaryList entries={filteredEntriesForList} totalEntries={entries.length} onThisDayEntries={onThisDayEntries} onSelectEntry={(id) => setViewState({ view: 'entry', id })} />;
     }
   };
 
@@ -345,14 +342,9 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
         entries={entries}
         onNewEntry={() => setViewState({ view: 'new' })}
         onGoHome={handleGoHome}
+        onGoToSearch={handleGoToSearch}
         currentView={viewState.view}
         onToggleView={handleToggleView}
-        searchTerm={searchTerm}
-        onSearchTermChange={setSearchTerm}
-        startDate={startDate}
-        onStartDateChange={setStartDate}
-        endDate={endDate}
-        onEndDateChange={setEndDate}
         onSignOut={handleSignOut}
         onUpdateProfile={handleUpdateProfile}
         onAvatarUpload={handleAvatarUpload}

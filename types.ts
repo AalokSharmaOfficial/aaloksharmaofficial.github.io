@@ -22,4 +22,5 @@ export type ViewState =
   | { view: 'entry'; id: string }
   | { view: 'edit'; id: string }
   | { view: 'new' }
-  | { view: 'calendar' };
+  | { view: 'calendar' }
+  | { view: 'search' };
