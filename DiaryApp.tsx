@@ -219,6 +219,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
         };
         setEntries(prev => [newEntryForState, ...prev].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
       }
+      alert('Entry saved successfully!');
       setViewState({ view: 'list' });
     } catch (error) {
       console.error("Error saving entry:", error);
@@ -233,6 +234,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
         if (error) throw error;
         setEntries(prev => prev.filter(entry => entry.id !== id));
         setViewState({ view: 'list' });
+        alert('Entry deleted successfully.');
       } catch (error) {
         console.error("Error deleting entry:", error);
         alert("Failed to delete entry. Please try again.");
@@ -251,6 +253,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
 
       if (error) throw error;
       setProfile(data as Profile);
+      alert('Profile updated!');
     } catch (error) {
       console.error("Error updating profile:", error);
       alert("Failed to update profile.");
@@ -306,8 +309,10 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
       alert("No entries found in the selected date range.");
       return;
     }
+    
+    setIsExportModalOpen(false);
 
-    if (window.confirm('Warning: This exported file will not be encrypted. Please keep it safe on your computer.')) {
+    if (window.confirm('This exported file will not be encrypted. Are you sure you want to continue?')) {
         const fileContent = entriesToExport
             .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) // sort oldest to newest
             .map(entry => {
@@ -336,8 +341,8 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        alert('Entries exported successfully!');
     }
-    setIsExportModalOpen(false);
   };
   
   const handleGoHome = () => {
@@ -395,7 +400,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
       case 'new':
       case 'edit':
       default:
-        return <DiaryList entries={filteredEntriesForList} totalEntries={entries.length} onThisDayEntries={onThisDayEntries} onSelectEntry={(id) => setViewState({ view: 'entry', id })} />;
+        return <DiaryList entries={filteredEntriesForList} totalEntries={entries.length} onThisDayEntries={onThisDayEntries} onSelectEntry={(id) => setViewState({ view: 'entry', id })} profile={profile} isFiltered={!!startDate || !!endDate} />;
     }
   };
 
