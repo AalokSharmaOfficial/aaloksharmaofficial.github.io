@@ -36,19 +36,30 @@ const Auth: React.FC = () => {
   }
   
   const handleSignUp = async () => {
-      // The new trigger in Supabase will create the profile row automatically.
-      // We just need to sign the user up.
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
       alert('Check your email for the confirmation link!');
   }
 
   const handleSignIn = async () => {
-      // All key derivation logic is now handled inside DiaryApp.
-      // This component's only job is to authenticate the user.
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
   }
+  
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      setError(error.error_description || error.message);
+      setLoading(false); // Only set loading to false on error, on success it will redirect
+    }
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +86,7 @@ const Auth: React.FC = () => {
             <p className="text-slate-500 dark:text-slate-400 mt-2">{isSignUp ? 'Create a secure, encrypted account.' : 'Sign in to access your journal.'}</p>
         </div>
 
-        {error && <p className="text-center text-red-500 bg-red-50 p-3 rounded-md">{error}</p>}
+        {error && <p className="text-center text-red-500 bg-red-50 dark:bg-red-900/20 dark:text-red-300 p-3 rounded-md">{error}</p>}
 
         <form className="space-y-6" onSubmit={handleSubmit}>
           <input
@@ -95,30 +106,47 @@ const Auth: React.FC = () => {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
           />
-          <button type="submit" disabled={loading} className="w-full px-4 py-2 font-semibold text-white bg-indigo-500 rounded-md hover:bg-indigo-600 disabled:bg-indigo-300">
+          <button type="submit" disabled={loading} className="w-full px-4 py-2 font-semibold text-white bg-indigo-500 rounded-md hover:bg-indigo-600 disabled:bg-indigo-300 transition-colors">
             {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
           </button>
         </form>
-        
-        <p className="text-xs text-center text-slate-400 dark:text-slate-500">
-            Note: For security, password reset is not supported. If you forget your password, your encrypted data will be unrecoverable.
-        </p>
 
         <div className="relative">
             <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-slate-300 dark:border-slate-600" />
             </div>
             <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400">Or</span>
+                <span className="px-2 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400">Or continue with</span>
             </div>
         </div>
-
+        
+        <button
+            type="button"
+            onClick={signInWithGoogle}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-slate-300 rounded-md hover:bg-slate-50 disabled:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-700 dark:disabled:bg-slate-700 transition-colors"
+            aria-label="Sign in with Google"
+        >
+            <svg className="w-5 h-5" aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.8 0-5.2-1.89-6.06-4.44H2.36v2.84C4.01 20.44 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.94 14.06c-.18-.54-.28-1.11-.28-1.69s.1-1.15.28-1.69V7.84H2.36C1.5 9.49 1 11.18 1 12.87s.5 3.38 1.36 4.96l3.58-2.77z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 1.33 14.97 0 12 0 7.7 0 4.01 2.56 2.36 6.21l3.58 2.84C6.8 4.73 9.2 2.84 12 5.38z" fill="#EA4335"/>
+            </svg>
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Sign in with Google</span>
+        </button>
+        
         <p className="text-center text-sm text-slate-500 dark:text-slate-400">
             {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
             <button onClick={() => {setIsSignUp(!isSignUp); setError(null)}} className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
                 {isSignUp ? 'Sign In' : 'Sign Up'}
             </button>
         </p>
+        
+        <p className="text-xs text-center text-slate-400 dark:text-slate-500 pt-2">
+            Note: For security, password reset is not supported. If you forget your password, your encrypted data will be unrecoverable.
+        </p>
+
       </div>
     </div>
   );
