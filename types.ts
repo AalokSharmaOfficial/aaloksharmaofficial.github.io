@@ -17,16 +17,16 @@ export interface Profile {
   avatar_url?: string;
 }
 
-export type ViewState = 
-  | { view: 'list' }
-  | { view: 'entry'; id: string }
-  | { view: 'edit'; id: string }
-  | { view: 'new' }
-  | { view: 'calendar' }
-  | { view: 'search' };
+export type ViewState = 'timeline' | 'calendar' | 'search' | 'profile';
   
 export interface ToastMessage {
   id: string;
   message: string;
   type: 'success' | 'error' | 'info';
+}
+
+export interface Weather {
+  temp: number;
+  description: string;
+  icon: string;
 }

@@ -2,19 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-/* For a custom scrollbar to match the aesthetic */
+/* Base body styles for the new theme */
+body {
+    @apply bg-[#FBF8F3] dark:bg-slate-900 font-serif text-slate-700 dark:text-slate-300;
+}
+
+/* Custom scrollbar to match the new aesthetic */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f5f9; /* slate-100 */
+  background: #F4EFE9; /* A slightly darker shade for the track */
 }
 ::-webkit-scrollbar-thumb {
-  background: #94a3b8; /* slate-400 */
+  background: #DCD1C1; /* A muted color for the thumb */
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b; /* slate-500 */
+  background: #C9BBAA;
 }
 
 /* Dark mode scrollbar */
@@ -28,35 +33,70 @@
     background: #64748b; /* slate-500 */
 }
 
+/* Styles for the "paper" editor canvas */
+.paper-canvas {
+    background-color: #fff;
+    background-image:
+        linear-gradient(90deg, transparent 98%, #f0ebe5 98%),
+        linear-gradient(180deg, #fdfbf8 98%, #f0ebe5 98%);
+    background-size: 20px 20px;
+    border: 1px solid #EAE1D6;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+.dark .paper-canvas {
+    background-color: #1e293b; /* slate-800 */
+     background-image:
+        linear-gradient(90deg, transparent 98%, #29364a 98%),
+        linear-gradient(180deg, #1e293b 98%, #29364a 98%);
+    border-color: #334155; /* slate-700 */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
 
 /* Custom styles for React Quill to match the new design */
+.prose-editor {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
 .prose-editor .ql-toolbar {
   display: none; /* Hide default toolbar as we use a custom one */
 }
 
 .prose-editor .ql-container {
   border: none !important;
-  font-family: inherit;
-  font-size: 1rem;
+  font-family: 'Lora', serif;
+  font-size: 1.125rem; /* 18px for a better reading experience */
+  flex-grow: 1;
 }
 
 .prose-editor .ql-editor {
-  min-height: 200px;
-  max-height: 40vh;
-  padding: 0.75rem 1rem;
+  padding: 2rem 3rem;
   color: #334155; /* slate-700 */
-  line-height: 1.6;
+  line-height: 1.7;
+  caret-color: #6366f1; /* indigo-500 */
+  animation: caret-blink 1.25s step-end infinite;
 }
 
 .dark .prose-editor .ql-editor {
   color: #cbd5e1; /* slate-300 */
+  caret-color: #818cf8; /* indigo-400 */
 }
 
 .prose-editor .ql-editor.ql-blank::before {
   color: #94a3b8; /* slate-400 */
-  font-style: normal;
-  left: 1rem;
+  font-style: italic;
+  left: 3rem;
+  top: 2rem;
 }
-.dark .prose-editor .ql-editor.ql-blank::before {
-  color: #64748b; /* slate-500 */
+
+/* Smooth caret animation */
+@keyframes caret-blink {
+  from, to { border-color: transparent }
+  50% { border-color: inherit; }
+}
+
+.prose-editor .ql-editor > * {
+  transition: all 0.1s ease-in-out;
 }

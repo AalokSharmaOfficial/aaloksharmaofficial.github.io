@@ -4,8 +4,10 @@ import { Profile } from '../types';
 export const KEY_CHECK_STRING = "DAILY_DIARY_KEY_CHECK_v1";
 
 // --- Helper Functions ---
-const encodeBase64 = (buf: ArrayBuffer): string => btoa(String.fromCharCode(...new Uint8Array(buf)));
-const decodeBase64 = (str: string): ArrayBuffer => Uint8Array.from(atob(str), c => c.charCodeAt(0)).buffer;
+// Fix: Change parameter type to ArrayBufferLike to handle buffers from Uint8Array.
+const encodeBase64 = (buf: ArrayBufferLike): string => btoa(String.fromCharCode(...new Uint8Array(buf)));
+// Fix: Cast the result to ArrayBuffer to satisfy the return type. The .buffer property on a Uint8Array is typed as ArrayBufferLike.
+const decodeBase64 = (str: string): ArrayBuffer => Uint8Array.from(atob(str), c => c.charCodeAt(0)).buffer as ArrayBuffer;
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 

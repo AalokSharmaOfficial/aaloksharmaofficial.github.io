@@ -30,3 +30,35 @@ export const formatTimestamp = (dateString: string): string => {
     return "Invalid date";
   }
 };
+
+/**
+ * Formats a timestamp string into a full, detailed format.
+ * e.g., "Tuesday, April 16, 2024 at 5:30 PM"
+ * @param dateString The ISO date string to format.
+ * @returns A formatted string.
+ */
+export const formatFullTimestamp = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    return format(date, "EEEE, MMMM d, yyyy 'at' p");
+  } catch (error) {
+    console.error("Error formatting full date:", dateString, error);
+    return "Invalid date";
+  }
+};
+
+/**
+ * Formats a timestamp string into a relative time with a suffix.
+ * e.g., "about 2 hours ago"
+ * @param dateString The ISO date string to format.
+ * @returns A formatted string.
+ */
+export const formatRelativeTime = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    return formatDistanceToNow(date, { addSuffix: true });
+  } catch (error) {
+    console.error("Error formatting relative time:", dateString, error);
+    return "Invalid time";
+  }
+};

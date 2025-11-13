@@ -5,11 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="./vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Diary</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
           extend: {
+            fontFamily: {
+              'serif': ['Lora', 'serif'],
+            },
             keyframes: {
               'toast-in': {
                 'from': { transform: 'translateX(100%)', opacity: '0' },
@@ -30,22 +36,6 @@
     </script>
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/react-quill@2.0.0/dist/quill.snow.css" />
-    <style type="text/css">
-      /* For a custom scrollbar to match the aesthetic */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #f1f5f9; /* slate-100 */
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #94a3b8; /* slate-400 */
-        border-radius: 10px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #64748b; /* slate-500 */
-      }
-    </style>
   <script type="importmap">
 {
   "imports": {
@@ -68,7 +58,7 @@
 }
 </script>
 </head>
-  <body class="bg-slate-50 text-slate-800">
+  <body class="bg-[#FBF8F3] dark:bg-slate-900 text-slate-800">
     <div id="root"></div>
     <div id="portal-root"></div>
     <script type="module" src="./index.tsx"></script>

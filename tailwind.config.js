@@ -7,6 +7,9 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        'serif': ['Lora', 'serif'],
+      },
       keyframes: {
         'toast-in': {
           'from': { transform: 'translateX(100%)', opacity: '0' },

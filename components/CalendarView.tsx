@@ -6,13 +6,19 @@ interface CalendarViewProps {
   onSelectDate: (date: Date) => void;
 }
 
+const toLocalDateString = (date: Date): string => {
+    // This trick adjusts for the timezone offset to get the local date's YYYY-MM-DD representation
+    return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
+};
+
 const CalendarView: React.FC<CalendarViewProps> = ({ entries, onSelectDate }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const entryDates = useMemo(() => {
     const dates = new Set<string>();
     entries.forEach(entry => {
-      dates.add(new Date(entry.created_at).toISOString().split('T')[0]);
+      // Convert UTC timestamp to local date string for accurate mapping
+      dates.add(toLocalDateString(new Date(entry.created_at)));
     });
     return dates;
   }, [entries]);
@@ -59,7 +65,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ entries, onSelectDate }) =>
     while (day <= endDate) {
       for (let i = 0; i < 7; i++) {
         const cloneDay = new Date(day);
-        const dayKey = cloneDay.toISOString().split('T')[0];
+        const dayKey = toLocalDateString(cloneDay);
         const hasEntry = entryDates.has(dayKey);
         
         days.push(

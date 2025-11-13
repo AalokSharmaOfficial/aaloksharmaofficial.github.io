@@ -1,7 +1,7 @@
 import React from 'react';
 import { DiaryEntry } from '../types';
 import DOMPurify from 'dompurify';
-import { formatDistanceToNow } from 'date-fns';
+import { formatFullTimestamp, formatRelativeTime } from '../lib/dateUtils';
 
 interface DiaryEntryViewProps {
   entry: DiaryEntry;
@@ -10,16 +10,8 @@ interface DiaryEntryViewProps {
 }
 
 const DiaryEntryView: React.FC<DiaryEntryViewProps> = ({ entry, onEdit, onDelete }) => {
-  const createdAt = new Date(entry.created_at);
-  const fullDate = createdAt.toLocaleString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  });
-  const relativeTime = formatDistanceToNow(createdAt, { addSuffix: true });
+  const fullDate = formatFullTimestamp(entry.created_at);
+  const relativeTime = formatRelativeTime(entry.created_at);
 
   return (
     <div className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 animate-fade-in">
