@@ -31,6 +31,10 @@ const InitializeEncryption: React.FC<InitializeEncryptionProps> = ({ onSuccess, 
         const key = await deriveKey(password, salt);
         const { iv: key_check_iv, data: key_check_value } = await encrypt(key, KEY_CHECK_STRING);
 
+        // Extract full_name and avatar_url from user metadata if available (e.g., from Google sign-in)
+        const fullName = user.user_metadata?.full_name;
+        const avatarUrl = user.user_metadata?.avatar_url;
+
         // Instead of updating, we now insert the new profile directly.
         // The RLS policy ensures a user can only insert a profile for themselves.
         const { error: insertError } = await supabase
@@ -39,7 +43,9 @@ const InitializeEncryption: React.FC<InitializeEncryptionProps> = ({ onSuccess, 
             id: user.id, 
             salt, 
             key_check_value, 
-            key_check_iv 
+            key_check_iv,
+            full_name: fullName,
+            avatar_url: avatarUrl,
           });
         
         if (insertError) throw insertError;
