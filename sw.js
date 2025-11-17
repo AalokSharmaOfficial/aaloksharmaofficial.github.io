@@ -1,17 +1,17 @@
-const CACHE_NAME = 'diary-cache-v5'; // Updated version to trigger SW update
+const CACHE_NAME = 'diary-cache-v7'; // Updated version to trigger SW update
 
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/index.css',
-  '/icon-192x192.png',
-  '/icon-512x512.png',
-  '/manifest.json',
-  '/privacy.html',
-  '/terms.html'
+  '.',
+  'index.html',
+  'index.css',
+  'icon-192x192.png',
+  'icon-512x512.png',
+  'manifest.json',
+  'privacy.html',
+  'terms.html'
 ];
 
-// Install: Cache the app shell
+// Install: Cache the app shell and take control immediately
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -20,9 +20,10 @@ self.addEventListener('install', (event) => {
         return cache.addAll(urlsToCache);
       })
   );
+  self.skipWaiting(); // Force the new SW to activate immediately
 });
 
-// Activate: Clean up old caches to ensure the new SW takes control
+// Activate: Clean up old caches and claim clients
 self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
@@ -35,7 +36,7 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim()) // Take control of all open clients
   );
 });
 
@@ -52,7 +53,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request).catch(() => {
         // If the network fails, serve the main app page from the cache.
-        return caches.match('/index.html');
+        return caches.match('index.html');
       })
     );
     return;
