@@ -13,11 +13,35 @@ const DiaryEntryView: React.FC<DiaryEntryViewProps> = ({ entry, onEdit, onDelete
   const fullDate = formatFullTimestamp(entry.created_at);
   const relativeTime = formatRelativeTime(entry.created_at);
 
+  // DOMPurify v3 removed ALLOWED_CSS_PROPS. We use a hook to achieve the same result for image styling.
+  const allowedCssProps = ['width', 'float', 'margin', 'margin-left', 'margin-right', 'margin-top', 'margin-bottom', 'text-align'];
+  DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+    // Check if the node is an element and has a style attribute
+    if (node instanceof Element && node.hasAttribute('style')) {
+      const style = node.getAttribute('style') || '';
+      const sanitizedStyle = style.split(';').filter(prop => {
+        if (!prop.includes(':')) return false;
+        const propName = prop.split(':')[0].trim();
+        return propName && allowedCssProps.includes(propName);
+      }).join(';');
+      
+      // If there are any allowed styles left, set the attribute, otherwise remove it.
+      if (sanitizedStyle) {
+        node.setAttribute('style', sanitizedStyle);
+      } else {
+        node.removeAttribute('style');
+      }
+    }
+  });
+
   const sanitizedContent = DOMPurify.sanitize(entry.content, {
     ADD_TAGS: ['img'],
     ADD_ATTR: ['style', 'class'],
-    ALLOWED_CSS_PROPS: ['width', 'float', 'margin', 'margin-left', 'margin-right', 'margin-top', 'margin-bottom', 'text-align']
   });
+  
+  // It's good practice to remove hooks after use to prevent side-effects.
+  DOMPurify.removeHook('afterSanitizeAttributes');
+
 
   return (
     <div className="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 animate-fade-in">
