@@ -117,3 +117,28 @@ body {
 .prose-editor .ql-editor > * {
   transition: all 0.1s ease-in-out;
 }
+
+/*
+  FIX: Resolved content overflow issue in DiaryEntryView.
+  Content from the editor, especially with inline styles or long strings,
+  could overflow its container. These more general rules ensure that all
+  content wraps and scales correctly for a clean layout.
+*/
+.prose {
+  /* Enforce word wrapping on the entire content block. This handles long,
+     unbroken strings of text in any element (paragraphs, headers, etc.). */
+  overflow-wrap: break-word;
+  word-break: break-word;
+  /* NEW: Establish a new block formatting context. This is a robust way
+     to ensure the container properly wraps around all its content, including
+     floated elements like images, which prevents them from overflowing. */
+  display: flow-root;
+}
+
+.prose img {
+  /* Force images to be responsive. The `!important` is critical to override
+     inline `width` styles set by the rich text editor that might be wider
+     than the container. */
+  max-width: 100% !important;
+  height: auto !important;
+}
