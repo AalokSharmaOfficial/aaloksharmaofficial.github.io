@@ -20,7 +20,7 @@ import PasswordPrompt from './components/PasswordPrompt';
 import ProfileView from './components/ProfileView';
 import HamburgerMenu from './components/HamburgerMenu';
 import ConfirmationModal from './components/ConfirmationModal';
-import { RangeStatic } from 'react-quill';
+import type { RangeStatic } from 'quill';
 
 interface DiaryAppProps {
   session: Session;

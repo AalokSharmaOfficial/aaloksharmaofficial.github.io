@@ -14,9 +14,9 @@ const DiaryEntryView: React.FC<DiaryEntryViewProps> = ({ entry, onEdit, onDelete
   const relativeTime = formatRelativeTime(entry.created_at);
 
   const sanitizedContent = DOMPurify.sanitize(entry.content, {
-    ALLOWED_TAGS: [...DOMPurify.defaults.ALLOWED_TAGS, 'img'],
-    ALLOWED_ATTR: [...DOMPurify.defaults.ALLOWED_ATTR, 'style', 'class'],
-    ALLOWED_CSS_PROPERTIES: ['width', 'float', 'margin', 'margin-left', 'margin-right', 'margin-top', 'margin-bottom', 'text-align']
+    ADD_TAGS: ['img'],
+    ADD_ATTR: ['style', 'class'],
+    ALLOWED_CSS_PROPS: ['width', 'float', 'margin', 'margin-left', 'margin-right', 'margin-top', 'margin-bottom', 'text-align']
   });
 
   return (
