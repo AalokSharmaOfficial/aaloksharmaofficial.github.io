@@ -2,6 +2,7 @@
   "name": "Diary",
   "description": "A simple and elegant web application to write and save your life events. All your data is end-to-end encrypted and stored securely.",
   "requestFramePermissions": [
-    "geolocation"
+    "geolocation",
+    "microphone"
   ]
 }

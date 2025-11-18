@@ -98,6 +98,46 @@ export const decrypt = async (key: CryptoKey, ciphertext: string, iv: string): P
 };
 
 /**
+ * Encrypts binary data (ArrayBuffer) using AES-GCM.
+ * @param {CryptoKey} key The encryption key.
+ * @param {ArrayBuffer} data The binary data to encrypt.
+ * @returns {Promise<{ iv: string, data: ArrayBuffer }>} The base64 encoded IV and encrypted binary data.
+ */
+export const encryptBinary = async (key: CryptoKey, data: ArrayBuffer): Promise<{ iv: string, data: ArrayBuffer }> => {
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+
+  const encryptedData = await window.crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    data
+  );
+
+  return {
+    iv: encodeBase64(iv.buffer),
+    data: encryptedData,
+  };
+};
+
+/**
+ * Decrypts binary data (ArrayBuffer) using AES-GCM.
+ * @param {CryptoKey} key The decryption key.
+ * @param {ArrayBuffer} data The encrypted binary data.
+ * @param {string} iv The base64 encoded Initialization Vector.
+ * @returns {Promise<ArrayBuffer>} The decrypted binary data.
+ */
+export const decryptBinary = async (key: CryptoKey, data: ArrayBuffer, iv: string): Promise<ArrayBuffer> => {
+  const ivBuffer = decodeBase64(iv);
+
+  const decryptedBuffer = await window.crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: ivBuffer },
+    key,
+    data
+  );
+
+  return decryptedBuffer;
+};
+
+/**
  * Fetches user profile, derives key, and verifies it.
  * @param password The user's password.
  * @param userId The user's ID.

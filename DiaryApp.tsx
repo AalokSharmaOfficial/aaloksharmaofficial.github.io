@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabaseClient';
@@ -59,7 +57,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | 'new' | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null);
   
-  const { key, setKey, encrypt, decrypt } = useCrypto();
+  const { key, setKey, encrypt, decrypt, encryptBinary } = useCrypto();
   const [keyStatus, setKeyStatus] = useState<KeyStatus>('checking');
   const [profile, setProfile] = useState<Profile | null>(null);
   
@@ -81,7 +79,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
 
   // Smart Tags State
   const [isSmartTagsModalOpen, setIsSmartTagsModalOpen] = useState(false);
-  const [pendingEntrySave, setPendingEntrySave] = useState<Omit<DiaryEntry, 'id' | 'owner_id'> | null>(null);
+  const [pendingEntrySave, setPendingEntrySave] = useState<Partial<DiaryEntry> | null>(null);
   const [smartSuggestions, setSmartSuggestions] = useState<string[]>([]);
 
   // Ref to track loading promises to avoid duplicate requests
@@ -194,12 +192,13 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
         if (error) throw error;
 
         const decrypted = await decrypt(key, data.encrypted_entry, data.iv);
-        const { title, content } = JSON.parse(decrypted);
+        const { title, content, audio } = JSON.parse(decrypted);
 
         setEntries(prev => prev.map(e => e.id === id ? {
             ...e,
             title,
             content,
+            audio, // Set audio metadata if present
             isDecrypted: true,
             isLoading: false
         } : e));
@@ -291,13 +290,51 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
       return Array.from(journals).sort();
   }, [entries]);
 
-  const executeSave = useCallback(async (entryData: Omit<DiaryEntry, 'id' | 'owner_id'>) => {
+  const executeSave = useCallback(async (entryData: Partial<DiaryEntry> & Pick<DiaryEntry, 'title' | 'content' | 'created_at'>) => {
      if (!key) { addToast("Security session expired.", "error"); return; }
      if (!editingEntry) { addToast("Cannot save: no entry is currently being edited.", "error"); return; }
 
      setSaveStatus('encrypting');
      try {
-       const contentToEncrypt = JSON.stringify({ title: entryData.title, content: entryData.content });
+       let audioMetadata = null;
+       const currentEntryState = editingEntry === 'new' ? {} : editingEntry;
+       
+       // 1. Handle Audio Encryption & Upload if present
+       if (entryData.tempAudioBlob) {
+            try {
+                const buffer = await entryData.tempAudioBlob.arrayBuffer();
+                const { iv, data } = await encryptBinary(key, buffer);
+                
+                // Upload as a blob with correct MIME type
+                const encryptedBlob = new Blob([data], { type: 'application/octet-stream' });
+                const fileName = `${session.user.id}/${Date.now()}-audio.bin`;
+                
+                const { error: uploadError } = await supabase.storage
+                    .from('diary-audio') // Ensure this bucket exists
+                    .upload(fileName, encryptedBlob, { upsert: true });
+
+                if (uploadError) throw uploadError;
+
+                audioMetadata = {
+                    path: fileName,
+                    iv: iv,
+                    type: entryData.tempAudioBlob.type
+                };
+            } catch (err) {
+                console.error("Audio upload failed", err);
+                addToast("Failed to secure audio. Saving text only.", "error");
+            }
+       } else if ('audio' in currentEntryState) {
+           // Preserve existing audio if not replaced/deleted
+           audioMetadata = currentEntryState.audio;
+       }
+
+       // 2. Encrypt Main Content (Text + Audio Metadata)
+       const contentToEncrypt = JSON.stringify({ 
+           title: entryData.title, 
+           content: entryData.content,
+           audio: audioMetadata
+       });
        const { iv, data: encrypted_entry } = await encrypt(key, contentToEncrypt);
  
        const isUpdate = typeof editingEntry === 'object' && 'id' in editingEntry && editingEntry.id !== '';
@@ -311,13 +348,28 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
        if (isUpdate) {
          const { error } = await supabase.from('diaries').update(record).eq('id', (editingEntry as DiaryEntry).id);
          if (error) throw error;
-         // Ensure we mark the updated entry as decrypted since we just wrote it
-         setEntries(prev => prev.map(e => e.id === (editingEntry as DiaryEntry).id ? { ...e, ...entryData, isDecrypted: true } : e));
+         
+         // Update local state
+         setEntries(prev => prev.map(e => e.id === (editingEntry as DiaryEntry).id ? { 
+             ...e, 
+             ...entryData, 
+             audio: audioMetadata, // Update audio metadata in local state
+             isDecrypted: true 
+         } as DiaryEntry : e));
+
        } else {
          const { data, error } = await supabase.from('diaries').insert({ ...record, owner_id: session.user.id }).select('id, created_at, mood, tags, owner_id, journal').single();
          if (error) throw error;
-         // New entry is definitely decrypted in memory
-         const newEntry: DiaryEntry = { ...data, ...entryData, isDecrypted: true, isLoading: false };
+         
+         const newEntry: DiaryEntry = { 
+             ...data, 
+             ...entryData,
+             audio: audioMetadata,
+             id: data.id, // Explicitly set ID from DB
+             isDecrypted: true, 
+             isLoading: false 
+         } as DiaryEntry;
+         
          setEntries(prev => [newEntry, ...prev].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
        }
        addToast('Entry saved!', 'success');
@@ -333,7 +385,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
        addToast("Failed to save entry.", "error");
        setSaveStatus('error');
      }
-  }, [key, editingEntry, session.user.id, encrypt, addToast]);
+  }, [key, editingEntry, session.user.id, encrypt, encryptBinary, addToast]);
 
   const handleInitiateSave = useCallback((entryData: Omit<DiaryEntry, 'id' | 'owner_id'>) => {
     // Intercept save to check for Smart Tags
@@ -355,13 +407,14 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
 
   const handleConfirmSmartTags = (finalTags: string[]) => {
     if (pendingEntrySave) {
+        // @ts-ignore - TS strictness on Partial vs Omit match
         executeSave({ ...pendingEntrySave, tags: finalTags });
     }
   };
 
   const handleCancelSmartTags = () => {
      if (pendingEntrySave) {
-         // Save with original tags only
+         // @ts-ignore
          executeSave(pendingEntrySave);
      }
   };
@@ -381,6 +434,9 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
         .eq('id', entryToDelete.id);
 
       if (error) throw error;
+      
+      // Note: We do not explicitly delete audio files from storage here to keep logic simple.
+      // In a production app, you'd likely want a cleanup cron job or a specific delete function for storage.
 
       setEntries(prev => prev.filter(e => e.id !== entryToDelete.id));
       addToast('Entry deleted successfully.', 'success');
@@ -519,7 +575,8 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
                     content: content.content,
                     tags: entry.tags,
                     mood: entry.mood,
-                    journal: entry.journal
+                    journal: entry.journal,
+                    audio: content.audio ? "Audio file attached (encrypted, not exported)" : undefined
                 });
                 
             } catch (err) {
@@ -772,11 +829,12 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
               entry={editingEntry}
               onUpdateEntry={(updates) => {
                   if (editingEntry === 'new') {
-                      setEditingEntry({
+                      setEditingEntry(prev => ({
                         id: '', owner_id: '', title: '', content: '',
                         created_at: new Date().toISOString(),
+                        ...(typeof prev === 'object' ? prev : {}),
                         ...updates
-                      });
+                      }));
                   } else {
                       setEditingEntry(prev => ({ ...(prev as DiaryEntry), ...updates }));
                   }

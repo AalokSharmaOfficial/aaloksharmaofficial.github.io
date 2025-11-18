@@ -141,6 +141,26 @@ import { createClient } from '@supabase/supabase-js';
   WITH CHECK ( bucket_id = 'diary-images' AND (storage.foldername(name))[1] = auth.uid()::text );
 */
 //
+// 7. (Required for Audio Entries) Set up Supabase Storage for audio files.
+/*
+  -- Step 1: Create a new PRIVATE bucket named 'diary-audio'.
+  -- Go to Storage > New Bucket > Name: 'diary-audio' > Public Bucket: UNCHECKED.
+  
+  -- Step 2: Add policies. Run these in SQL Editor:
+  
+  -- Allow uploads
+  CREATE POLICY "Authenticated users can upload audio"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK ( bucket_id = 'diary-audio' AND (storage.foldername(name))[1] = auth.uid()::text );
+
+  -- Allow downloads (Critical for playback)
+  CREATE POLICY "Users can view their own audio"
+  ON storage.objects FOR SELECT
+  TO authenticated
+  USING ( bucket_id = 'diary-audio' AND (storage.foldername(name))[1] = auth.uid()::text );
+*/
+//
 // NOTE: The previous trigger-based profile creation has been removed.
 // The application now handles creating the user profile on their first login,
 // which is a more robust method.

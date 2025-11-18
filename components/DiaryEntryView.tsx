@@ -2,6 +2,7 @@ import React from 'react';
 import { DiaryEntry } from '../types';
 import DOMPurify from 'dompurify';
 import { formatFullTimestamp, formatRelativeTime } from '../lib/dateUtils';
+import SecureAudioPlayer from './SecureAudioPlayer';
 
 interface DiaryEntryViewProps {
   entry: DiaryEntry;
@@ -91,6 +92,17 @@ const DiaryEntryView: React.FC<DiaryEntryViewProps> = ({ entry, onEdit, onDelete
         </div>
       </div>
       
+      {/* Audio Player */}
+      {entry.audio && (
+          <div className="my-6">
+              <SecureAudioPlayer 
+                  path={entry.audio.path} 
+                  iv={entry.audio.iv} 
+                  mimeType={entry.audio.type}
+              />
+          </div>
+      )}
+
       <div 
         className="prose prose-slate dark:prose-invert max-w-none my-6"
         dangerouslySetInnerHTML={{ __html: sanitizedContent }}

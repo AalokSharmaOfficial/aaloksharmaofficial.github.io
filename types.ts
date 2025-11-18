@@ -7,9 +7,20 @@ export interface DiaryEntry {
   tags?: string[];
   mood?: string;
   journal?: string; // New field for Multiple Journals feature
+  
+  // Audio Metadata (Stored inside encrypted content)
+  audio?: {
+    path: string;
+    iv: string;
+    type: string;
+  };
+
   // Fields for lazy loading architecture
   isDecrypted?: boolean;
   isLoading?: boolean;
+  
+  // Temporary state for editing
+  tempAudioBlob?: Blob;
 }
 
 export interface Profile {

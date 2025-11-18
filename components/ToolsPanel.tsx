@@ -1,11 +1,12 @@
 import React, { useRef } from 'react';
 import { DiaryEntry } from '../types';
+import AudioRecorder from './AudioRecorder';
 
 type SelectedImageFormat = { align?: string; width?: string; float?: string };
 
 interface ToolsPanelProps {
   entry: DiaryEntry | 'new';
-  onUpdateEntry: (updates: Partial<Pick<DiaryEntry, 'mood' | 'tags' | 'journal'>>) => void;
+  onUpdateEntry: (updates: Partial<DiaryEntry> | Partial<Pick<DiaryEntry, 'tempAudioBlob'>>) => void;
   editorFont: 'serif' | 'sans' | 'mono';
   onFontChange: (font: 'serif' | 'sans' | 'mono') => void;
   onImageUpload: (file: File) => void;
@@ -31,6 +32,8 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({
     const currentMood = typeof entry === 'object' ? entry.mood : undefined;
     const currentTags = typeof entry === 'object' ? (entry.tags || []) : [];
     const currentJournal = (typeof entry === 'object' && entry.journal) ? entry.journal : 'Personal';
+    const tempAudioBlob = typeof entry === 'object' ? entry.tempAudioBlob : undefined;
+    
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleImageInsertClick = () => {
@@ -56,6 +59,14 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({
     
     const handleJournalUpdate = (val: string) => {
         onUpdateEntry({ journal: val });
+    }
+
+    const handleAudioRecorded = (blob: Blob) => {
+        onUpdateEntry({ tempAudioBlob: blob });
+    }
+
+    const handleAudioDelete = () => {
+        onUpdateEntry({ tempAudioBlob: undefined });
     }
 
     return (
@@ -86,6 +97,13 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({
             </div>
 
             <div className="space-y-4 pt-2 border-t border-slate-200 dark:border-slate-700">
+                {/* Audio Recorder */}
+                <AudioRecorder 
+                    onRecordingComplete={handleAudioRecorded}
+                    existingBlob={tempAudioBlob}
+                    onDelete={handleAudioDelete}
+                />
+
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                 <button 
                     onClick={handleImageInsertClick} 

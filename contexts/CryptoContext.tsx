@@ -1,5 +1,11 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { deriveAndVerifyKey as deriveAndVerifyKeyUtil, encrypt as encryptUtil, decrypt as decryptUtil } from '../lib/crypto';
+import { 
+  deriveAndVerifyKey as deriveAndVerifyKeyUtil, 
+  encrypt as encryptUtil, 
+  decrypt as decryptUtil,
+  encryptBinary as encryptBinaryUtil,
+  decryptBinary as decryptBinaryUtil
+} from '../lib/crypto';
 
 interface CryptoContextType {
   key: CryptoKey | null;
@@ -7,6 +13,8 @@ interface CryptoContextType {
   deriveAndVerifyKey: (password: string, userId: string) => Promise<CryptoKey | null>;
   encrypt: (key: CryptoKey, plaintext: string) => Promise<{ iv: string; data: string; }>;
   decrypt: (key: CryptoKey, ciphertext: string, iv: string) => Promise<string>;
+  encryptBinary: (key: CryptoKey, data: ArrayBuffer) => Promise<{ iv: string; data: ArrayBuffer; }>;
+  decryptBinary: (key: CryptoKey, data: ArrayBuffer, iv: string) => Promise<ArrayBuffer>;
 }
 
 const CryptoContext = createContext<CryptoContextType | undefined>(undefined);
@@ -20,6 +28,8 @@ export const CryptoProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     deriveAndVerifyKey: deriveAndVerifyKeyUtil,
     encrypt: encryptUtil,
     decrypt: decryptUtil,
+    encryptBinary: encryptBinaryUtil,
+    decryptBinary: decryptBinaryUtil,
   };
 
   return (
