@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabaseClient';
@@ -7,6 +8,7 @@ import { useCrypto } from './contexts/CryptoContext';
 import { useToast } from './contexts/ToastContext';
 import { fetchWeather } from './lib/weather';
 import { generateSmartTags } from './lib/smartTags';
+import { processImage } from './lib/imageUtils';
 
 // Import zip.js classes. Note: These are provided via importmap in index.html.
 // We rely on the import map to resolve '@zip.js/zip.js'.
@@ -561,10 +563,17 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
     
     setIsUploadingImage(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
+      // Client-side compression and resizing
+      const { blob, extension } = await processImage(file);
+
+      const fileName = `${session.user.id}/${Date.now()}.${extension}`;
       
-      const { error: uploadError } = await supabase.storage.from('diary-images').upload(fileName, file);
+      // Upload the processed blob instead of the raw file
+      const { error: uploadError } = await supabase.storage.from('diary-images').upload(fileName, blob, {
+          contentType: 'image/webp',
+          upsert: false
+      });
+
       if (uploadError) throw uploadError;
       
       const { data } = supabase.storage.from('diary-images').getPublicUrl(fileName);
