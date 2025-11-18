@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabaseClient';
@@ -49,7 +50,10 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
   const { key, setKey, encrypt, decrypt } = useCrypto();
   const [keyStatus, setKeyStatus] = useState<KeyStatus>('checking');
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [isLeftSidebarVisible, setLeftSidebarVisible] = useState(true);
+  
+  // Responsive Sidebar: Start hidden on mobile, visible on desktop
+  const [isLeftSidebarVisible, setLeftSidebarVisible] = useState(() => window.innerWidth >= 768);
+  
   const [isToolsPanelVisible, setToolsPanelVisible] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'synced' | 'encrypting' | 'error'>('synced');
   const [weather, setWeather] = useState<Weather | null>(null);
