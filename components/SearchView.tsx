@@ -5,11 +5,12 @@ import { formatTimestamp } from '../lib/dateUtils';
 interface SearchViewProps {
   entries: DiaryEntry[];
   onSelectEntry: (id: string) => void;
+  onBack: () => void;
 }
 
 const moods = ['😊', '😢', '😠', '😎', '🤔', '😍', '😴', '🥳'];
 
-const SearchView: React.FC<SearchViewProps> = ({ entries, onSelectEntry }) => {
+const SearchView: React.FC<SearchViewProps> = ({ entries, onSelectEntry, onBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -90,7 +91,17 @@ const SearchView: React.FC<SearchViewProps> = ({ entries, onSelectEntry }) => {
   const hasActiveFilter = searchTerm.trim() !== '' || selectedMood || selectedTags.length > 0 || startDate || endDate;
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
+      <button
+        onClick={onBack}
+        className="flex items-center text-sm font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors group"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 transform group-hover:-translate-x-1 transition-transform" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+        </svg>
+        Back to Timeline
+      </button>
+
       <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
         <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-4">Search Past Entries</h1>
         <div className="relative">

@@ -34,7 +34,13 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ isVisible, onClose, activeVie
           {navItems.map(item => (
             <button
               key={item.view}
-              onClick={() => onChangeView(item.view as ViewState)}
+              onClick={() => {
+                  onChangeView(item.view as ViewState);
+                  // Auto-close sidebar on mobile (md breakpoint is 768px)
+                  if (window.innerWidth < 768) {
+                    onClose();
+                  }
+              }}
               className={`w-full flex items-center gap-3 p-3 rounded-lg text-left text-sm font-medium transition-colors ${
                 activeView === item.view 
                   ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300' 

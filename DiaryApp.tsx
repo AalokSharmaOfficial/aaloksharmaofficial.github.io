@@ -481,8 +481,8 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
 
   const renderMainView = () => {
     switch (activeView) {
-      case 'calendar': return <CalendarView entries={entries} onSelectDate={handleDateSelect} />;
-      case 'search': return <SearchView entries={entries} onSelectEntry={(id) => handleEditEntry(entries.find(e => e.id === id)!)} />;
+      case 'calendar': return <CalendarView entries={entries} onSelectDate={handleDateSelect} onBack={() => changeView('timeline')} />;
+      case 'search': return <SearchView entries={entries} onSelectEntry={(id) => handleEditEntry(entries.find(e => e.id === id)!)} onBack={() => changeView('timeline')} />;
       case 'profile': return (
         <ProfileView
             session={session}
