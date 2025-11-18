@@ -6,6 +6,7 @@ import { DiaryEntry, ViewState, Profile, Weather } from './types';
 import { useCrypto } from './contexts/CryptoContext';
 import { useToast } from './contexts/ToastContext';
 import { fetchWeather } from './lib/weather';
+import { generateSmartTags } from './lib/smartTags';
 
 // Import zip.js classes. Note: These are provided via importmap in index.html.
 // We rely on the import map to resolve '@zip.js/zip.js'.
@@ -26,6 +27,7 @@ import PasswordPrompt from './components/PasswordPrompt';
 import ProfileView from './components/ProfileView';
 import HamburgerMenu from './components/HamburgerMenu';
 import ConfirmationModal from './components/ConfirmationModal';
+import SmartTagsModal from './components/SmartTagsModal';
 
 // Fix: RangeStatic is not exported as a named export from 'quill' in some type definitions.
 // Defining it locally ensures compatibility.
@@ -74,6 +76,11 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [selectedImageFormat, setSelectedImageFormat] = useState<SelectedImageFormat | null>(null);
+
+  // Smart Tags State
+  const [isSmartTagsModalOpen, setIsSmartTagsModalOpen] = useState(false);
+  const [pendingEntrySave, setPendingEntrySave] = useState<Omit<DiaryEntry, 'id' | 'owner_id'> | null>(null);
+  const [smartSuggestions, setSmartSuggestions] = useState<string[]>([]);
 
   // Ref to track loading promises to avoid duplicate requests
   const loadingEntriesRef = useRef<Set<string>>(new Set());
@@ -282,46 +289,80 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
       return Array.from(journals).sort();
   }, [entries]);
 
-  const handleSaveEntry = useCallback(async (entryData: Omit<DiaryEntry, 'id' | 'owner_id'>) => {
-    if (!key) { addToast("Security session expired.", "error"); return; }
-    if (!editingEntry) { addToast("Cannot save: no entry is currently being edited.", "error"); return; }
+  const executeSave = useCallback(async (entryData: Omit<DiaryEntry, 'id' | 'owner_id'>) => {
+     if (!key) { addToast("Security session expired.", "error"); return; }
+     if (!editingEntry) { addToast("Cannot save: no entry is currently being edited.", "error"); return; }
+
+     setSaveStatus('encrypting');
+     try {
+       const contentToEncrypt = JSON.stringify({ title: entryData.title, content: entryData.content });
+       const { iv, data: encrypted_entry } = await encrypt(key, contentToEncrypt);
+ 
+       const isUpdate = typeof editingEntry === 'object' && 'id' in editingEntry && editingEntry.id !== '';
+       const record = {
+         encrypted_entry, iv,
+         mood: entryData.mood, tags: entryData.tags,
+         journal: entryData.journal || 'Personal',
+         created_at: entryData.created_at
+       };
+ 
+       if (isUpdate) {
+         const { error } = await supabase.from('diaries').update(record).eq('id', (editingEntry as DiaryEntry).id);
+         if (error) throw error;
+         // Ensure we mark the updated entry as decrypted since we just wrote it
+         setEntries(prev => prev.map(e => e.id === (editingEntry as DiaryEntry).id ? { ...e, ...entryData, isDecrypted: true } : e));
+       } else {
+         const { data, error } = await supabase.from('diaries').insert({ ...record, owner_id: session.user.id }).select('id, created_at, mood, tags, owner_id, journal').single();
+         if (error) throw error;
+         // New entry is definitely decrypted in memory
+         const newEntry: DiaryEntry = { ...data, ...entryData, isDecrypted: true, isLoading: false };
+         setEntries(prev => [newEntry, ...prev].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+       }
+       addToast('Entry saved!', 'success');
+       setEditingEntry(null);
+       setActiveView('timeline');
+       setLeftSidebarVisible(true);
+       setSaveStatus('synced');
+       setIsSmartTagsModalOpen(false);
+       setPendingEntrySave(null);
+
+     } catch (error) {
+       console.error("Error saving entry:", error);
+       addToast("Failed to save entry.", "error");
+       setSaveStatus('error');
+     }
+  }, [key, editingEntry, session.user.id, encrypt, addToast]);
+
+  const handleInitiateSave = useCallback((entryData: Omit<DiaryEntry, 'id' | 'owner_id'>) => {
+    // Intercept save to check for Smart Tags
+    const existingTags = entryData.tags || [];
+    const suggestions = generateSmartTags(entryData.content);
     
-    setSaveStatus('encrypting');
-    try {
-      const contentToEncrypt = JSON.stringify({ title: entryData.title, content: entryData.content });
-      const { iv, data: encrypted_entry } = await encrypt(key, contentToEncrypt);
+    // Filter out tags that are already in existingTags
+    const newSuggestions = suggestions.filter(tag => !existingTags.includes(tag));
 
-      const isUpdate = typeof editingEntry === 'object' && 'id' in editingEntry && editingEntry.id !== '';
-      const record = {
-        encrypted_entry, iv,
-        mood: entryData.mood, tags: entryData.tags,
-        journal: entryData.journal || 'Personal',
-        created_at: entryData.created_at
-      };
-
-      if (isUpdate) {
-        const { error } = await supabase.from('diaries').update(record).eq('id', (editingEntry as DiaryEntry).id);
-        if (error) throw error;
-        // Ensure we mark the updated entry as decrypted since we just wrote it
-        setEntries(prev => prev.map(e => e.id === (editingEntry as DiaryEntry).id ? { ...e, ...entryData, isDecrypted: true } : e));
-      } else {
-        const { data, error } = await supabase.from('diaries').insert({ ...record, owner_id: session.user.id }).select('id, created_at, mood, tags, owner_id, journal').single();
-        if (error) throw error;
-        // New entry is definitely decrypted in memory
-        const newEntry: DiaryEntry = { ...data, ...entryData, isDecrypted: true, isLoading: false };
-        setEntries(prev => [newEntry, ...prev].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
-      }
-      addToast('Entry saved!', 'success');
-      setEditingEntry(null);
-      setActiveView('timeline');
-      setLeftSidebarVisible(true);
-      setSaveStatus('synced');
-    } catch (error) {
-      console.error("Error saving entry:", error);
-      addToast("Failed to save entry.", "error");
-      setSaveStatus('error');
+    if (newSuggestions.length > 0) {
+        setPendingEntrySave(entryData);
+        setSmartSuggestions(newSuggestions);
+        setIsSmartTagsModalOpen(true);
+    } else {
+        // No new suggestions, proceed to save directly
+        executeSave(entryData);
     }
-  }, [session.user.id, key, encrypt, addToast, editingEntry]);
+  }, [executeSave]);
+
+  const handleConfirmSmartTags = (finalTags: string[]) => {
+    if (pendingEntrySave) {
+        executeSave({ ...pendingEntrySave, tags: finalTags });
+    }
+  };
+
+  const handleCancelSmartTags = () => {
+     if (pendingEntrySave) {
+         // Save with original tags only
+         executeSave(pendingEntrySave);
+     }
+  };
 
   const requestDeleteEntry = (entry: DiaryEntry) => {
     setEntryToDelete(entry);
@@ -698,7 +739,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
                 // and loss of editor state when metadata (like mood) updates.
                 key={(typeof editingEntry === 'object' && editingEntry.id) ? editingEntry.id : 'draft_session'}
                 entry={typeof editingEntry === 'object' ? editingEntry : undefined}
-                onSave={handleSaveEntry}
+                onSave={handleInitiateSave}
                 onWordCountChange={setWordCount}
                 onCharacterCountChange={setCharacterCount}
                 editorFont={editorFont}
@@ -756,6 +797,13 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
         onConfirm={handleDeleteEntry}
         title="Delete Entry?"
         message="Are you sure you want to permanently delete this entry? This action cannot be undone."
+      />
+      <SmartTagsModal 
+        isOpen={isSmartTagsModalOpen}
+        existingTags={pendingEntrySave?.tags || []}
+        suggestedTags={smartSuggestions}
+        onConfirm={handleConfirmSmartTags}
+        onCancel={handleCancelSmartTags}
       />
     </div>
   );
