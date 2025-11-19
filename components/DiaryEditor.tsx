@@ -83,6 +83,7 @@ const DiaryEditor = forwardRef<EditorHandle, DiaryEditorProps>(({ entry, onSave,
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [entryDate, setEntryDate] = useState(new Date());
+  const [isHydrating, setIsHydrating] = useState(false);
 
   const quillRef = useRef<ReactQuill>(null);
   const loadedIdRef = useRef<string | null>('INITIAL_MOUNT');
@@ -152,9 +153,15 @@ const DiaryEditor = forwardRef<EditorHandle, DiaryEditorProps>(({ entry, onSave,
       setContent(entry.content);
       setEntryDate(new Date(entry.created_at));
       
-      setTimeout(() => {
+      const hasSecureImages = entry.content.includes('secure-diary-image');
+      setIsHydrating(hasSecureImages);
+
+      setTimeout(async () => {
           if (quillRef.current) {
-              hydrateSecureImages(entry.content, quillRef.current.getEditor());
+              if (hasSecureImages) {
+                  await hydrateSecureImages(entry.content, quillRef.current.getEditor());
+                  setIsHydrating(false);
+              }
           }
       }, 100);
 
@@ -162,6 +169,7 @@ const DiaryEditor = forwardRef<EditorHandle, DiaryEditorProps>(({ entry, onSave,
       setTitle("Today's diary entry...");
       setContent(""); 
       setEntryDate(new Date());
+      setIsHydrating(false);
     }
   }, [entry, hydrateSecureImages]);
 
@@ -212,13 +220,33 @@ const DiaryEditor = forwardRef<EditorHandle, DiaryEditorProps>(({ entry, onSave,
                 placeholder="Today's diary entry..."
             />
         </div>
-        <div className="flex-grow overflow-y-auto">
+        <div className="flex-grow overflow-y-auto relative">
+            {isHydrating && (
+                <div className="absolute inset-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-8 space-y-6 animate-fade-in">
+                     <div className="space-y-3">
+                        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4 animate-pulse"></div>
+                        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full animate-pulse"></div>
+                        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-5/6 animate-pulse"></div>
+                     </div>
+                     
+                     <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded-lg w-full animate-pulse flex items-center justify-center">
+                        <svg className="w-12 h-12 text-slate-300 dark:text-slate-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                     </div>
+
+                     <div className="space-y-3">
+                        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full animate-pulse"></div>
+                        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-4/5 animate-pulse"></div>
+                     </div>
+                </div>
+            )}
             <ReactQuill
                 ref={quillRef}
                 theme="snow"
                 value={content}
                 onChange={setContent}
-                className="prose-editor"
+                className={`prose-editor transition-opacity duration-500 ${isHydrating ? 'opacity-0' : 'opacity-100'}`}
                 placeholder="Start writing here..."
                 modules={modules}
             />
