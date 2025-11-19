@@ -24,16 +24,21 @@ const strToBin = (str: string) => Uint8Array.from(str, c => c.charCodeAt(0));
 
 /**
  * Registers a new WebAuthn credential with the PRF extension enabled.
- * It then immediately asserts (logins) to get the PRF key, wraps the master key,
- * and returns the data structure to be stored in localStorage.
+ * It attempts to get the PRF key during creation to avoid a double-scan.
  */
 export const registerBiometric = async (masterKey: CryptoKey, userId: string): Promise<BiometricData> => {
     if (!IS_SUPPORTED) throw new Error("WebAuthn not supported");
 
-    // 1. Create Credential (Registration)
+    // 1. Generate Salt and Challenge upfront
+    const saltBuffer = window.crypto.getRandomValues(new Uint8Array(32));
+    // Pass the underlying buffer to encodeBase64
+    const saltBase64 = encodeBase64(saltBuffer.buffer);
+    
     const challenge = window.crypto.getRandomValues(new Uint8Array(32));
     const id = strToBin(userId); // User ID handle
 
+    // 2. Create Credential with PRF input (Try One-Step)
+    // We pass the salt here so the authenticator can return the key immediately.
     const creationOptions: any = {
         publicKey: {
             challenge,
@@ -51,33 +56,6 @@ export const registerBiometric = async (masterKey: CryptoKey, userId: string): P
             },
             timeout: 60000,
             extensions: {
-                prf: {} // Enable PRF
-            }
-        }
-    };
-
-    const credential = await navigator.credentials.create(creationOptions) as any;
-    if (!credential) throw new Error("Failed to create credential");
-
-    const credentialId = encodeBase64(credential.rawId);
-
-    // 2. Generate a random salt for PRF
-    const saltBuffer = window.crypto.getRandomValues(new Uint8Array(32));
-    // FIX: Pass the underlying buffer to encodeBase64, not the Uint8Array view
-    const saltBase64 = encodeBase64(saltBuffer.buffer);
-
-    // 3. Assert (Login) immediately to get the PRF secret
-    // We need this to wrap the key. Registration usually doesn't return the PRF secret directly.
-    const assertionOptions: any = {
-        publicKey: {
-            challenge: window.crypto.getRandomValues(new Uint8Array(32)),
-            rpId: window.location.hostname,
-            allowCredentials: [{
-                type: 'public-key',
-                id: credential.rawId
-            }],
-            userVerification: 'required',
-            extensions: {
                 prf: {
                     eval: {
                         first: saltBuffer
@@ -87,16 +65,52 @@ export const registerBiometric = async (masterKey: CryptoKey, userId: string): P
         }
     };
 
-    const assertion = await navigator.credentials.get(assertionOptions) as any;
-    const prfResults = assertion?.getClientExtensionResults()?.prf;
+    const credential = await navigator.credentials.create(creationOptions) as any;
+    if (!credential) throw new Error("Failed to create credential");
 
-    if (!prfResults || !prfResults.results || !prfResults.results.first) {
-        throw new Error("Authenticator does not support PRF extension.");
+    const credentialId = encodeBase64(credential.rawId);
+    
+    // 3. Check for PRF result in creation response
+    let prfKeyMaterial: Uint8Array | null = null;
+    const createResults = credential.getClientExtensionResults();
+    
+    if (createResults?.prf?.results?.first) {
+        prfKeyMaterial = new Uint8Array(createResults.prf.results.first);
+    } else {
+        // 4. Fallback: Assert (Login) to get PRF secret (Two-Step)
+        // If creation didn't return the key, we try a second call.
+        const assertionOptions: any = {
+            publicKey: {
+                challenge: window.crypto.getRandomValues(new Uint8Array(32)),
+                rpId: window.location.hostname,
+                allowCredentials: [{
+                    type: 'public-key',
+                    id: credential.rawId
+                }],
+                userVerification: 'required',
+                extensions: {
+                    prf: {
+                        eval: {
+                            first: saltBuffer
+                        }
+                    }
+                }
+            }
+        };
+
+        const assertion = await navigator.credentials.get(assertionOptions) as any;
+        const getResults = assertion?.getClientExtensionResults();
+
+        if (getResults?.prf?.results?.first) {
+            prfKeyMaterial = new Uint8Array(getResults.prf.results.first);
+        }
     }
 
-    const prfKeyMaterial = new Uint8Array(prfResults.results.first);
+    if (!prfKeyMaterial) {
+        throw new Error("Authenticator does not support PRF extension.");
+    }
     
-    // 4. Derive a Wrapping Key from the PRF output
+    // 5. Derive a Wrapping Key from the PRF output
     const wrappingKey = await window.crypto.subtle.importKey(
         'raw',
         prfKeyMaterial,
@@ -105,12 +119,10 @@ export const registerBiometric = async (masterKey: CryptoKey, userId: string): P
         ['encrypt', 'decrypt']
     );
 
-    // 5. Export Master Key to string
+    // 6. Export Master Key to string
     const masterKeyString = await exportKey(masterKey); // Base64 string
 
-    // 6. Wrap (Encrypt) the Master Key using the Wrapping Key
-    // We use our existing `encrypt` helper but passing the wrappingKey
-    // Note: `encrypt` expects a string plaintext and returns base64
+    // 7. Wrap (Encrypt) the Master Key using the Wrapping Key
     const { iv, data: encryptedKey } = await encrypt(wrappingKey, masterKeyString);
 
     return {
