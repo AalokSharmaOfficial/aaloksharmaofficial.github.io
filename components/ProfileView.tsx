@@ -463,6 +463,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                             onChange={(e) => setRecoveryPassword(e.target.value)}
                             className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 mb-2"
                             autoFocus
+                            autoComplete="current-password"
                         />
                         
                         {recoveryError && <p className="text-red-500 text-sm mb-4">{recoveryError}</p>}

@@ -126,6 +126,7 @@ const Auth: React.FC = () => {
             onBlur={handleBlurInputs}
             onKeyDown={handleKeyDown}
             className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
+            autoComplete="username"
           />
           <input
             type="password"
@@ -141,6 +142,7 @@ const Auth: React.FC = () => {
             onBlur={handleBlurInputs}
             onKeyDown={handleKeyDown}
             className="w-full px-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
+            autoComplete={isSignUp ? "new-password" : "current-password"}
           />
           <button type="submit" disabled={loading} className="w-full px-4 py-2 font-semibold text-white bg-indigo-500 rounded-md hover:bg-indigo-600 disabled:bg-indigo-300 transition-colors">
             {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}

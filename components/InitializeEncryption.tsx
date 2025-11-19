@@ -175,6 +175,7 @@ const InitializeEncryption: React.FC<InitializeEncryptionProps> = ({ onSuccess, 
                     minLength={6}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full px-4 py-2 pr-10 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
+                    autoComplete="new-password"
                 />
                 <button 
                   type="button" 
