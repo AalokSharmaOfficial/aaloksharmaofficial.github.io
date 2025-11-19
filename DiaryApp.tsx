@@ -60,7 +60,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | 'new' | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null);
   
-  const { key, setKey, encrypt, decrypt, encryptBinary, decryptBinary } = useCrypto();
+  const { key, setKey, encrypt, decrypt, encryptBinary } = useCrypto();
   const [keyStatus, setKeyStatus] = useState<KeyStatus>('checking');
   const [profile, setProfile] = useState<Profile | null>(null);
   
@@ -645,7 +645,8 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
     setIsUploadingImage(true);
     try {
       // 1. Process (Resize/Compress)
-      const { blob, extension } = await processImage(file);
+      // Removed unused 'extension' variable to fix build error
+      const { blob } = await processImage(file);
 
       // 2. Encrypt
       const buffer = await blob.arrayBuffer();
