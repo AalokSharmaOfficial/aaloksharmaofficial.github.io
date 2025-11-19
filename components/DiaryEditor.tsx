@@ -31,8 +31,9 @@ if (Quill) {
     const marginStyle = new Parchment.Attributor.Style('margin', 'margin');
     
     // Register Class and Alt attributors (Attributes, not Styles)
-    const classAttribute = new Parchment.Attributor.Attribute('class', 'class', { scope: Parchment.Scope.INLINE });
-    const altAttribute = new Parchment.Attributor.Attribute('alt', 'alt', { scope: Parchment.Scope.INLINE });
+    // CRITICAL FIX: Scope.ANY allow these attributes on Embeds (Images), not just Inline text.
+    const classAttribute = new Parchment.Attributor.Attribute('class', 'class', { scope: Parchment.Scope.ANY });
+    const altAttribute = new Parchment.Attributor.Attribute('alt', 'alt', { scope: Parchment.Scope.ANY });
 
     Quill.register(widthStyle, true);
     Quill.register(floatStyle, true);

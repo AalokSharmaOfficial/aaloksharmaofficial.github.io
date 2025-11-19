@@ -654,7 +654,7 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
       const fileName = `${session.user.id}/${Date.now()}.bin`; // .bin because it's encrypted
       const encryptedBlob = new Blob([data], { type: 'application/octet-stream' });
 
-      // 3. Upload to 'diary-images' bucket (as requested)
+      // 3. Upload to 'diary-images' bucket
       const { error: uploadError } = await supabase.storage
           .from('diary-images')
           .upload(fileName, encryptedBlob, {
@@ -665,65 +665,51 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
       if (uploadError) throw uploadError;
       
       // 4. Insert Placeholder with Metadata into Editor
-      // Fix: Ensure range exists, defaulting to end if not focused.
       const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
-      
       const metadata = JSON.stringify({ path: fileName, iv: iv });
       
+      // Insert the image with our secure placeholder
       quill.insertEmbed(range.index, 'image', SECURE_PLACEHOLDER, 'user');
       
-      // Select the newly inserted image to apply formats
+      // Format it immediately with attributes
+      // Note: We select the range to ensure formatting applies to the specific image we just inserted
       quill.setSelection(range.index, 1);
       quill.format('alt', metadata);
       quill.format('class', 'secure-diary-image');
       
-      // Reset selection to after image
+      // Move selection past image
       quill.setSelection(range.index + 1, 0, 'user');
       
-      // 5. Trigger immediate decryption/preview
-      // We attempt to find the image node we just inserted.
-      // Using a slight delay ensures the DOM is ready for manipulation.
+      // 5. Instant Preview
+      // Instead of complex DOM traversal, we use a simpler approach:
+      // We create the blob URL and attempt to find the specific image we just created.
+      // We search for an image with the exact placeholder SRC and the metadata we just added.
       setTimeout(() => {
           try {
-              // Re-fetch editor instance to be safe inside async
-              const quill = editorRef.current?.getEditor();
-              if (!quill) return;
-
-              // Try standard leaf retrieval
-              const [leaf] = quill.getLeaf(range.index);
-              const candidateNode = leaf?.domNode;
-              
-              let img: HTMLImageElement | null = null;
-              
-              // Strict check: Is the node at this index actually an image element?
-              // This prevents crashes if 'leaf' is a Text node.
-              if (candidateNode instanceof Element && candidateNode.tagName === 'IMG') {
-                  img = candidateNode as HTMLImageElement;
-              }
-              
-              // Fallback: If direct leaf retrieval failed (e.g. cursor moved, structure changed),
-              // search by the unique metadata path in the alt attribute.
-              if (!img) {
-                  const editorRoot = quill.root;
-                  const images = editorRoot.querySelectorAll('img.secure-diary-image');
-                  if (images.length > 0) {
-                      for(let i = 0; i < images.length; i++) {
-                          const alt = images[i].getAttribute('alt');
-                          if (alt && alt.includes(fileName)) {
-                              img = images[i] as HTMLImageElement;
-                              break;
-                          }
-                      }
-                  }
-              }
-              
-              if (img) {
-                  const url = URL.createObjectURL(blob); // Use local blob for instant preview
-                  img.src = url;
-                  img.style.opacity = '1';
-              }
-          } catch (err) {
-              console.error("Error setting preview image", err);
+             // Refetch root to be safe
+             const root = editorRef.current?.getEditor()?.root;
+             if (!root) return;
+             
+             const images = root.querySelectorAll('img.secure-diary-image');
+             let targetImg: HTMLImageElement | null = null;
+             
+             for(let i = 0; i < images.length; i++) {
+                 const img = images[i] as HTMLImageElement;
+                 const alt = img.getAttribute('alt');
+                 // Check if this is the image we just added by matching the unique filename path in alt
+                 if (alt && alt.includes(fileName) && img.src === SECURE_PLACEHOLDER) {
+                     targetImg = img;
+                     break;
+                 }
+             }
+             
+             if (targetImg) {
+                 const url = URL.createObjectURL(blob);
+                 targetImg.src = url;
+                 targetImg.style.opacity = '1';
+             }
+          } catch(err) {
+              console.error("Preview error:", err);
           }
       }, 50);
 
