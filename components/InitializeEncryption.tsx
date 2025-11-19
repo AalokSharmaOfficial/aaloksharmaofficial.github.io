@@ -44,7 +44,11 @@ const InitializeEncryption: React.FC<InitializeEncryptionProps> = ({ onSuccess, 
         const user = session.user;
         if (!user) throw new Error("User not available.");
         
-        const salt = generateSalt();
+        const rawSalt = generateSalt();
+        // SECURITY UPGRADE: Use 600,000 iterations for new accounts (OWASP recommended).
+        // We prefix the salt so the app knows to use 600k instead of the legacy 100k.
+        const salt = `v1:600000:${rawSalt}`;
+        
         const key = await deriveKey(password, salt);
         const { iv: key_check_iv, data: key_check_value } = await encrypt(key, KEY_CHECK_STRING);
 

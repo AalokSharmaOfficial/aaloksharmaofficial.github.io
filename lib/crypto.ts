@@ -24,13 +24,33 @@ export const generateSalt = (): string => {
 
 /**
  * Derives a CryptoKey from a password and salt using PBKDF2.
+ * Supports legacy salt (pure base64, 100k iterations) and new format "v1:iterations:base64salt".
  * @param {string} password The user's password.
- * @param {string} salt The base64 encoded salt.
+ * @param {string} saltString The salt string (base64 or formatted).
  * @returns {Promise<CryptoKey>} The derived AES-GCM key.
  */
-export const deriveKey = async (password: string, salt: string): Promise<CryptoKey> => {
+export const deriveKey = async (password: string, saltString: string): Promise<CryptoKey> => {
   const passwordBuffer = textEncoder.encode(password);
-  const saltBuffer = decodeBase64(salt);
+  
+  // Default to legacy iteration count
+  let iterations = 100000;
+  let actualSalt = saltString;
+
+  // Check for versioned salt format to support higher iteration counts
+  // Format: "v1:iterations:base64Salt"
+  // Base64 does not contain ':', so this check is safe.
+  if (saltString.startsWith("v1:")) {
+    const parts = saltString.split(":");
+    if (parts.length === 3) {
+       const iter = parseInt(parts[1], 10);
+       if (!isNaN(iter)) {
+         iterations = iter;
+         actualSalt = parts[2];
+       }
+    }
+  }
+
+  const saltBuffer = decodeBase64(actualSalt);
   
   const keyMaterial = await window.crypto.subtle.importKey(
     'raw',
@@ -44,7 +64,7 @@ export const deriveKey = async (password: string, salt: string): Promise<CryptoK
     {
       name: 'PBKDF2',
       salt: saltBuffer,
-      iterations: 100000,
+      iterations: iterations,
       hash: 'SHA-256',
     },
     keyMaterial,
