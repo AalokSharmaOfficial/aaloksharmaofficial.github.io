@@ -77,7 +77,8 @@ export const registerBiometric = async (masterKey: CryptoKey, userId: string): P
     // Some browsers/authenticators return it immediately.
     const createResults = credential.getClientExtensionResults();
     if (createResults?.prf?.results?.first) {
-         prfKeyMaterial = new Uint8Array(createResults.prf.results.first);
+         // Explicit cast to any to handle potential ArrayBufferLike mismatch
+         prfKeyMaterial = new Uint8Array(createResults.prf.results.first as any);
     } else {
         // 3. Step B: Assert (Login) to get the PRF Key
         // If creation didn't return the value, we perform an immediate assertion to retrieve it.
@@ -115,9 +116,11 @@ export const registerBiometric = async (masterKey: CryptoKey, userId: string): P
     }
     
     // 4. Derive Wrapping Key
+    // We cast prfKeyMaterial to any because TypeScript's lib.dom.d.ts definitions for BufferSource
+    // can conflict with Uint8Array<ArrayBufferLike> returned by WebAuthn API types.
     const wrappingKey = await window.crypto.subtle.importKey(
         'raw',
-        prfKeyMaterial,
+        prfKeyMaterial as any,
         'AES-GCM',
         false,
         ['encrypt', 'decrypt']
@@ -177,7 +180,7 @@ export const unlockBiometric = async (data: BiometricData): Promise<CryptoKey> =
     const prfKeyMaterial = new Uint8Array(prfResults.results.first as any);
     const wrappingKey = await window.crypto.subtle.importKey(
         'raw',
-        prfKeyMaterial,
+        prfKeyMaterial as any,
         'AES-GCM',
         false,
         ['encrypt', 'decrypt']
