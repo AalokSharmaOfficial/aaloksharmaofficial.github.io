@@ -36,7 +36,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   }
 
   return (
-    <aside className={`bg-[#F4EFE9] dark:bg-slate-900 border-r border-[#EAE1D6] dark:border-slate-800 flex flex-col transition-transform duration-300 ease-in-out w-64 fixed z-30 h-full ${isVisible ? 'translate-x-0' : '-translate-x-full'}`}>
+    <aside className={`bg-[#F4EFE9] dark:bg-slate-900 border-r border-[#EAE1D6] dark:border-slate-800 flex flex-col transition-transform duration-300 ease-in-out w-64 fixed md:absolute md:top-0 md:left-0 z-30 h-full ${isVisible ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="flex items-center justify-between p-4 border-b border-[#EAE1D6] dark:border-slate-800">
         <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Diary</h1>
         <button onClick={onClose} className="p-2 rounded-md hover:bg-slate-200/50 dark:hover:bg-slate-700/50">
