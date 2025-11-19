@@ -5,9 +5,9 @@ export const KEY_CHECK_STRING = "DAILY_DIARY_KEY_CHECK_v1";
 
 // --- Helper Functions ---
 // Fix: Change parameter type to ArrayBufferLike to handle buffers from Uint8Array.
-const encodeBase64 = (buf: ArrayBufferLike): string => btoa(String.fromCharCode(...new Uint8Array(buf)));
+export const encodeBase64 = (buf: ArrayBufferLike): string => btoa(String.fromCharCode(...new Uint8Array(buf)));
 // Fix: Cast the result to ArrayBuffer to satisfy the return type. The .buffer property on a Uint8Array is typed as ArrayBufferLike.
-const decodeBase64 = (str: string): ArrayBuffer => Uint8Array.from(atob(str), c => c.charCodeAt(0)).buffer as ArrayBuffer;
+export const decodeBase64 = (str: string): ArrayBuffer => Uint8Array.from(atob(str), c => c.charCodeAt(0)).buffer as ArrayBuffer;
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
@@ -180,4 +180,21 @@ export async function deriveAndVerifyKey(password: string, userId: string): Prom
 export const exportKey = async (key: CryptoKey): Promise<string> => {
   const exported = await window.crypto.subtle.exportKey("raw", key);
   return encodeBase64(exported);
+};
+
+/**
+ * Imports a raw key back into a CryptoKey.
+ * Used for biometric unlock logic.
+ * @param rawKeyBase64 The base64 encoded raw key.
+ * @returns Promise resolving to CryptoKey
+ */
+export const importKey = async (rawKeyBase64: string): Promise<CryptoKey> => {
+    const rawBuffer = decodeBase64(rawKeyBase64);
+    return window.crypto.subtle.importKey(
+        "raw",
+        rawBuffer,
+        { name: "AES-GCM" },
+        true,
+        ["encrypt", "decrypt"]
+    );
 };

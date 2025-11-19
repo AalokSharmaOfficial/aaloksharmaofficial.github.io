@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCrypto } from '../contexts/CryptoContext';
 // Fix: Use 'import type' for Session to resolve potential module resolution issues with older Supabase versions.
 import type { Session } from '@supabase/supabase-js';
+import { BiometricData } from '../types';
+import { unlockBiometric, isBiometricSupported } from '../lib/webauthn';
 
 interface PasswordPromptProps {
   onSuccess: (key: CryptoKey) => void;
@@ -14,6 +16,22 @@ const PasswordPrompt: React.FC<PasswordPromptProps> = ({ onSuccess, session }) =
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { deriveAndVerifyKey } = useCrypto();
+
+  const [hasBiometric, setHasBiometric] = useState(false);
+  const [isBioSupported, setIsBioSupported] = useState(false);
+
+  useEffect(() => {
+      const checkBio = async () => {
+          const supported = await isBiometricSupported();
+          setIsBioSupported(supported);
+          
+          const rawData = localStorage.getItem(`diary_bio_${session.user.id}`);
+          if (rawData) {
+              setHasBiometric(true);
+          }
+      };
+      checkBio();
+  }, [session.user.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +55,24 @@ const PasswordPrompt: React.FC<PasswordPromptProps> = ({ onSuccess, session }) =
     } finally {
         setLoading(false);
     }
+  };
+
+  const handleBiometricUnlock = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+          const rawData = localStorage.getItem(`diary_bio_${session.user.id}`);
+          if (!rawData) throw new Error("No biometric data found.");
+          
+          const bioData: BiometricData = JSON.parse(rawData);
+          const key = await unlockBiometric(bioData);
+          onSuccess(key);
+      } catch (err: any) {
+          console.error("Biometric unlock failed:", err);
+          setError("Biometric unlock failed. Please use your password.");
+      } finally {
+          setLoading(false);
+      }
   };
   
   return (
@@ -84,9 +120,27 @@ const PasswordPrompt: React.FC<PasswordPromptProps> = ({ onSuccess, session }) =
                 </button>
               </div>
               <button type="submit" disabled={loading} className="w-full px-4 py-2 font-semibold text-white bg-indigo-500 rounded-md hover:bg-indigo-600 disabled:bg-indigo-300">
-                  {loading ? 'Unlocking...' : 'Unlock'}
+                  {loading ? 'Unlocking...' : 'Unlock with Password'}
               </button>
             </form>
+
+            {isBioSupported && hasBiometric && (
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-700 text-center">
+                     <button 
+                        type="button" 
+                        onClick={handleBiometricUnlock}
+                        disabled={loading}
+                        className="flex flex-col items-center justify-center gap-2 w-full p-4 rounded-lg border-2 border-dashed border-indigo-300 hover:border-indigo-500 hover:bg-indigo-50 dark:border-slate-600 dark:hover:border-indigo-400 dark:hover:bg-indigo-900/20 transition-all group"
+                     >
+                         <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-300 group-hover:scale-110 transition-transform">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
+                            </svg>
+                         </div>
+                         <span className="font-semibold text-indigo-600 dark:text-indigo-300">Unlock with Biometrics</span>
+                     </button>
+                </div>
+            )}
         </div>
     </div>
   );

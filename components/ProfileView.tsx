@@ -4,6 +4,8 @@ import { Profile } from '../types';
 import { useCrypto } from '../contexts/CryptoContext';
 import { exportKey } from '../lib/crypto';
 import { generateRecoveryKit } from '../lib/recoveryKit';
+import { isBiometricSupported, registerBiometric } from '../lib/webauthn';
+import { useToast } from '../contexts/ToastContext';
 
 interface ProfileViewProps {
   session: Session;
@@ -41,11 +43,27 @@ const ProfileView: React.FC<ProfileViewProps> = ({
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [isGeneratingKit, setIsGeneratingKit] = useState(false);
   
-  const { deriveAndVerifyKey } = useCrypto();
+  // Biometric State
+  const [isBioSupported, setIsBioSupported] = useState(false);
+  const [isBioEnabled, setIsBioEnabled] = useState(false);
+  const [isBioLoading, setIsBioLoading] = useState(false);
+
+  const { deriveAndVerifyKey, key } = useCrypto();
+  const { addToast } = useToast();
 
   useEffect(() => {
     setName(profile?.full_name || '');
   }, [profile?.full_name]);
+
+  useEffect(() => {
+      const checkBio = async () => {
+          const supported = await isBiometricSupported();
+          setIsBioSupported(supported);
+          const stored = localStorage.getItem(`diary_bio_${session.user.id}`);
+          setIsBioEnabled(!!stored);
+      };
+      checkBio();
+  }, [session.user.id]);
 
   const handleNameSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,9 +103,9 @@ const ProfileView: React.FC<ProfileViewProps> = ({
 
     try {
         // 1. Verify Password
-        const key = await deriveAndVerifyKey(recoveryPassword, session.user.id);
+        const derivedKey = await deriveAndVerifyKey(recoveryPassword, session.user.id);
         
-        if (!key) {
+        if (!derivedKey) {
             setRecoveryError("Incorrect password.");
             setIsGeneratingKit(false);
             return;
@@ -100,7 +118,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({
         }
 
         // 2. Export Raw Key
-        const rawKey = await exportKey(key);
+        const rawKey = await exportKey(derivedKey);
 
         // 3. Generate PDF
         generateRecoveryKit({
@@ -122,8 +140,35 @@ const ProfileView: React.FC<ProfileViewProps> = ({
     }
   };
   
+  const toggleBiometric = async () => {
+      if (!key) {
+          addToast("Encryption key not available. Please re-login.", "error");
+          return;
+      }
+      
+      setIsBioLoading(true);
+      if (isBioEnabled) {
+          // Disable
+          localStorage.removeItem(`diary_bio_${session.user.id}`);
+          setIsBioEnabled(false);
+          addToast("Biometric unlock disabled.", "info");
+      } else {
+          // Enable
+          try {
+              const data = await registerBiometric(key, session.user.id);
+              localStorage.setItem(`diary_bio_${session.user.id}`, JSON.stringify(data));
+              setIsBioEnabled(true);
+              addToast("Biometric unlock enabled successfully!", "success");
+          } catch (err: any) {
+              console.error("Bio enable failed", err);
+              addToast(err.message || "Failed to enable biometrics.", "error");
+          }
+      }
+      setIsBioLoading(false);
+  };
+
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 animate-fade-in">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 animate-fade-in pb-24">
         <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-8">Profile & Settings</h1>
         
         {/* Profile Card */}
@@ -196,6 +241,22 @@ const ProfileView: React.FC<ProfileViewProps> = ({
                     <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
             </div>
+
+            {isBioSupported && (
+                <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <div>
+                        <h3 className="font-semibold text-slate-700 dark:text-slate-200">Biometric Unlock</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Use FaceID or TouchID to unlock your diary.</p>
+                    </div>
+                    <button 
+                        onClick={toggleBiometric} 
+                        disabled={isBioLoading}
+                        className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${isBioEnabled ? 'bg-green-500' : 'bg-slate-300'}`}
+                    >
+                        <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${isBioEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                </div>
+            )}
 
             <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <div>

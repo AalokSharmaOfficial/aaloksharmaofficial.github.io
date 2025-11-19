@@ -46,3 +46,10 @@ export interface Weather {
   icon: string;
   location: string;
 }
+
+export interface BiometricData {
+  credentialId: string;
+  salt: string; // The salt used for the PRF input
+  encryptedKey: string; // The Master Key encrypted with the PRF output
+  iv: string; // IV for the Master Key encryption
+}
