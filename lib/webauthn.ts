@@ -1,4 +1,3 @@
-
 import { encodeBase64, decodeBase64, importKey, exportKey, encrypt, decrypt } from './crypto';
 import { BiometricData } from '../types';
 
@@ -22,7 +21,6 @@ export const isBiometricSupported = async (): Promise<boolean> => {
 
 // --- Helpers for WebAuthn Encoding ---
 const strToBin = (str: string) => Uint8Array.from(str, c => c.charCodeAt(0));
-const binToStr = (bin: ArrayBuffer) => String.fromCharCode(...new Uint8Array(bin));
 
 /**
  * Registers a new WebAuthn credential with the PRF extension enabled.
@@ -65,7 +63,8 @@ export const registerBiometric = async (masterKey: CryptoKey, userId: string): P
 
     // 2. Generate a random salt for PRF
     const saltBuffer = window.crypto.getRandomValues(new Uint8Array(32));
-    const saltBase64 = encodeBase64(saltBuffer);
+    // FIX: Pass the underlying buffer to encodeBase64, not the Uint8Array view
+    const saltBase64 = encodeBase64(saltBuffer.buffer);
 
     // 3. Assert (Login) immediately to get the PRF secret
     // We need this to wrap the key. Registration usually doesn't return the PRF secret directly.
