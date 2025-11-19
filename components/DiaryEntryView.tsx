@@ -26,13 +26,14 @@ const DiaryEntryView: React.FC<DiaryEntryViewProps> = ({ entry, onEdit, onDelete
 
           const images = contentRef.current.querySelectorAll('img.secure-diary-image');
           
-          images.forEach(async (imgElement) => {
-              const img = imgElement as HTMLImageElement;
+          // Process sequentially to avoid overwhelming the connection
+          for (let i = 0; i < images.length; i++) {
+              const img = images[i] as HTMLImageElement;
               
               // Use data-secure-metadata attribute first, fallback to alt
               const metadataStr = img.getAttribute('data-secure-metadata') || img.getAttribute('alt');
               
-              // Only process if we have the metadata and haven't already decrypted (check src)
+              // Only process if we have the metadata and haven't already decrypted (blob check)
               if (metadataStr && !img.src.startsWith('blob:')) {
                   try {
                       const metadata = JSON.parse(metadataStr);
@@ -41,13 +42,22 @@ const DiaryEntryView: React.FC<DiaryEntryViewProps> = ({ entry, onEdit, onDelete
                           img.style.opacity = '0.5';
                           img.style.transition = 'opacity 0.3s';
 
-                          const { data: encryptedBlob, error } = await supabase.storage
+                          // STRATEGY CHANGE: Use createSignedUrl instead of download()
+                          // This is more robust against bucket config mismatches (public/private)
+                          const { data: signedData, error: signedError } = await supabase.storage
                               .from('diary-images')
-                              .download(metadata.path);
+                              .createSignedUrl(metadata.path, 60);
+
+                          if (signedError) {
+                              console.error("RLS Error: Could not sign URL. Check your Supabase policies.", signedError);
+                              throw signedError;
+                          }
+
+                          // Fetch the encrypted blob using the signed URL
+                          const response = await fetch(signedData.signedUrl);
+                          if (!response.ok) throw new Error(`Failed to fetch image blob: ${response.status}`);
                           
-                          if (error) throw error;
-                          
-                          const encryptedBuffer = await encryptedBlob.arrayBuffer();
+                          const encryptedBuffer = await response.arrayBuffer();
                           const decryptedBuffer = await decryptBinary(key, encryptedBuffer, metadata.iv);
                           
                           const decryptedBlob = new Blob([decryptedBuffer], { type: 'image/webp' });
@@ -58,9 +68,12 @@ const DiaryEntryView: React.FC<DiaryEntryViewProps> = ({ entry, onEdit, onDelete
                       }
                   } catch (e) {
                       console.error("Failed to decrypt image:", e);
+                      // Visual indicator that decryption failed
+                      img.style.border = "2px solid red";
+                      img.title = "Decryption failed";
                   }
               }
-          });
+          }
       };
 
       if (entry.isDecrypted) {

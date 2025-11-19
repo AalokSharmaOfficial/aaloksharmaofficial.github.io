@@ -112,13 +112,17 @@ const DiaryEditor = forwardRef<EditorHandle, DiaryEditorProps>(({ entry, onSave,
               if (metadata && metadata.path && metadata.iv) {
                    img.style.opacity = '0.5';
                    
-                   const { data: encryptedBlob, error } = await supabase.storage
+                   // Use createSignedUrl here as well
+                   const { data: signedData, error: signedError } = await supabase.storage
                       .from('diary-images')
-                      .download(metadata.path);
+                      .createSignedUrl(metadata.path, 60);
 
-                   if (error) throw error;
+                   if (signedError) throw signedError;
 
-                   const encryptedBuffer = await encryptedBlob.arrayBuffer();
+                   const response = await fetch(signedData.signedUrl);
+                   if (!response.ok) throw new Error(`Failed to fetch image blob: ${response.status}`);
+
+                   const encryptedBuffer = await response.arrayBuffer();
                    const decryptedBuffer = await decryptBinary(key, encryptedBuffer, metadata.iv);
                    
                    const decryptedBlob = new Blob([decryptedBuffer], { type: 'image/webp' });
