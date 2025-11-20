@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { supabase, supabaseUrl, supabaseKey } from '../lib/supabaseClient';
 import { useToast } from '../contexts/ToastContext';
 import Monkey from './Monkey';
@@ -17,6 +17,9 @@ const Auth: React.FC<AuthProps> = ({ onBackToHome }) => {
 
   const [focusState, setFocusState] = useState<'idle' | 'email' | 'password'>('idle');
   const [typingCounter, setTypingCounter] = useState(0);
+  
+  // New state for password visibility
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const handleFocusEmail = () => setFocusState('email');
   const handleFocusPassword = () => setFocusState('password');
@@ -27,6 +30,39 @@ const Auth: React.FC<AuthProps> = ({ onBackToHome }) => {
   };
 
   const isConfigured = supabaseUrl !== 'YOUR_SUPABASE_URL' && supabaseKey !== 'YOUR_SUPABASE_ANON_KEY';
+
+  // Password Strength Calculation
+  const passwordStrength = useMemo(() => {
+    if (!password) return 0;
+    let score = 0;
+    if (password.length >= 6) score++;
+    if (password.length >= 10) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) score++;
+    return score;
+  }, [password]);
+
+  const getStrengthLabel = () => {
+    switch (passwordStrength) {
+      case 0: return 'Too Short';
+      case 1: return 'Weak';
+      case 2: return 'Fair';
+      case 3: return 'Good';
+      case 4: return 'Strong';
+      default: return '';
+    }
+  };
+
+  const getStrengthColor = () => {
+    switch (passwordStrength) {
+      case 0:
+      case 1: return 'bg-red-500';
+      case 2: return 'bg-yellow-500';
+      case 3: return 'bg-blue-500';
+      case 4: return 'bg-green-500';
+      default: return 'bg-slate-200';
+    }
+  };
 
   if (!isConfigured) {
     return (
@@ -132,22 +168,66 @@ const Auth: React.FC<AuthProps> = ({ onBackToHome }) => {
             className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 transition-all"
             autoComplete="username"
           />
-          <input
-            type="password"
-            placeholder="Your password (min 6 characters)"
-            value={password}
-            required
-            minLength={6}
-            onChange={(e) => {
-                setPassword(e.target.value)
-                handleKeyDown();
-            }}
-            onFocus={handleFocusPassword}
-            onBlur={handleBlurInputs}
-            onKeyDown={handleKeyDown}
-            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 transition-all"
-            autoComplete={isSignUp ? "new-password" : "current-password"}
-          />
+          
+          <div className="relative">
+            <input
+              type={isPasswordVisible ? 'text' : 'password'}
+              placeholder="Your password (min 6 characters)"
+              value={password}
+              required
+              minLength={6}
+              onChange={(e) => {
+                  setPassword(e.target.value)
+                  handleKeyDown();
+              }}
+              onFocus={handleFocusPassword}
+              onBlur={handleBlurInputs}
+              onKeyDown={handleKeyDown}
+              className="w-full px-4 py-3 pr-12 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 transition-all"
+              autoComplete={isSignUp ? "new-password" : "current-password"}
+            />
+            <button 
+              type="button" 
+              onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+              className="absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+              tabIndex={-1}
+              aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+            >
+              {isPasswordVisible ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                  <path fillRule="evenodd" d="M.458 10C3.732 4.943 9.522 3 10 3s6.268 1.943 9.542 7c-3.274 5.057-9.042 7-9.542 7S3.732 15.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.27 8.138 15.522 6 10 6c-1.55 0-2.998.48-4.257 1.254l-1.74-1.741zM10 12a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                  <path d="M2.042 10c.832 2.345 3.16 4 5.918 4 1.55 0 2.998-.48 4.257-1.254l-1.473-1.473A3.999 3.999 0 0110 14c-2.209 0-4-1.791-4-4a3.999 3.999 0 011.21-2.828L5.293 5.293A10.014 10.014 0 00.458 10c1.274 1.862 4.022 4 9.542 4 1.105 0 2.158-.149 3.168-.43L10.373 12.16A4.003 4.003 0 0110 12z" />
+                </svg>
+              )}
+            </button>
+          </div>
+
+          {/* Password Strength Indicator (Only for Sign Up) */}
+          {isSignUp && password.length > 0 && (
+            <div className="space-y-2 animate-fade-in">
+              <div className="flex gap-1 h-1.5 w-full">
+                <div className={`h-full rounded-full flex-1 transition-all duration-300 ${passwordStrength >= 1 ? getStrengthColor() : 'bg-slate-100 dark:bg-slate-700'}`} />
+                <div className={`h-full rounded-full flex-1 transition-all duration-300 ${passwordStrength >= 2 ? getStrengthColor() : 'bg-slate-100 dark:bg-slate-700'}`} />
+                <div className={`h-full rounded-full flex-1 transition-all duration-300 ${passwordStrength >= 3 ? getStrengthColor() : 'bg-slate-100 dark:bg-slate-700'}`} />
+                <div className={`h-full rounded-full flex-1 transition-all duration-300 ${passwordStrength >= 4 ? getStrengthColor() : 'bg-slate-100 dark:bg-slate-700'}`} />
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-500 dark:text-slate-400">Strength</span>
+                <span className={`font-medium ${
+                  passwordStrength < 2 ? 'text-red-500' : 
+                  passwordStrength < 4 ? 'text-blue-500' : 'text-green-500'
+                }`}>
+                  {getStrengthLabel()}
+                </span>
+              </div>
+            </div>
+          )}
+
           <button type="submit" disabled={loading} className="w-full px-4 py-3 font-bold text-white bg-indigo-500 rounded-xl hover:bg-indigo-600 disabled:bg-indigo-300 transition-all transform active:scale-95 shadow-lg shadow-indigo-500/30">
             {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
           </button>
