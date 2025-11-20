@@ -70,12 +70,12 @@ const App: React.FC = () => {
   return (
     <ToastProvider>
       <CryptoProvider>
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-sans">
+        <div className="min-h-screen bg-[#FBF8F3] dark:bg-slate-900 font-sans">
           {!session ? (
             showLanding ? (
               <LandingPage onGetStarted={() => setShowLanding(false)} />
             ) : (
-              <Auth />
+              <Auth onBackToHome={() => setShowLanding(true)} />
             )
           ) : (
             <DiaryApp key={session.user.id} session={session} theme={theme} onToggleTheme={toggleTheme} />

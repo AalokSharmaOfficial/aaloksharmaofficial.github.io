@@ -149,11 +149,12 @@ body {
 /* The "Typing" effect for the demo screen */
 @keyframes typing-cursor {
   0%, 100% { border-right-color: transparent; }
-  50% { border-right-color: #818cf8; }
+  50% { border-right-color: currentColor; }
 }
 
 .typing-cursor {
-  border-right: 2px solid #818cf8;
+  border-right-width: 2px;
+  border-right-style: solid;
   animation: typing-cursor 0.8s step-end infinite;
 }
 

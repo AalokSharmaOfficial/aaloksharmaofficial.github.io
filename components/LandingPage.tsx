@@ -6,10 +6,42 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
   const [demoStep, setDemoStep] = useState(0);
-  // 0: Typing "My deepest secret..."
-  // 1: Encrypting (Scramble)
+  // 0: Typing
+  // 1: Encrypting
   // 2: Locked
+  
+  const words = ["Thoughts", "Secrets", "Memories", "Dreams"];
+  const [wordIndex, setWordIndex] = useState(0);
+  const [displayedText, setDisplayedText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  // Typewriter Effect for the Headline
+  useEffect(() => {
+    const currentWord = words[wordIndex];
+    const typeSpeed = isDeleting ? 50 : 100;
+
+    const timeout = setTimeout(() => {
+      if (!isDeleting && displayedText === currentWord) {
+        // Finished typing word, wait then delete
+        setTimeout(() => setIsDeleting(true), 2000);
+      } else if (isDeleting && displayedText === "") {
+        // Finished deleting, move to next word
+        setIsDeleting(false);
+        setWordIndex((prev) => (prev + 1) % words.length);
+      } else {
+        // Typing or Deleting characters
+        const nextText = isDeleting 
+          ? currentWord.substring(0, displayedText.length - 1)
+          : currentWord.substring(0, displayedText.length + 1);
+        setDisplayedText(nextText);
+      }
+    }, typeSpeed);
+
+    return () => clearTimeout(timeout);
+  }, [displayedText, isDeleting, wordIndex]);
+
+
+  // Phone Screen Demo Loop
   useEffect(() => {
     const loop = () => {
       setDemoStep(0); // Type
@@ -23,125 +55,143 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-indigo-500/30 overflow-x-hidden">
-      {/* Background Effects */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-900/20 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-900/20 blur-[120px]" />
+    <div className="min-h-screen bg-[#FBF8F3] text-slate-800 font-sans overflow-x-hidden selection:bg-indigo-200">
+      
+      {/* Background Gradients */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-200/30 blur-[100px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-orange-100/50 blur-[100px]" />
       </div>
 
       {/* Navbar */}
-      <nav className="relative z-20 flex items-center justify-between px-6 py-6 max-w-7xl mx-auto">
-        <div className="text-2xl font-bold font-serif tracking-tight flex items-center gap-2">
-           <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+      <nav className="relative z-20 flex items-center justify-between px-6 py-6 max-w-6xl mx-auto">
+        <div className="text-2xl font-bold font-serif tracking-tight flex items-center gap-2 text-slate-800">
+           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-900/5 border border-slate-100">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
               </svg>
            </div>
            <span>Diary</span>
         </div>
+        
         <button 
           onClick={onGetStarted}
-          className="px-5 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
+          className="px-6 py-2.5 bg-white text-indigo-600 font-bold rounded-full shadow-[4px_4px_10px_rgba(0,0,0,0.05),-4px_-4px_10px_rgba(255,255,255,0.8)] hover:shadow-[2px_2px_5px_rgba(0,0,0,0.05),-2px_-2px_5px_rgba(255,255,255,0.8)] hover:translate-y-px transition-all border border-slate-50"
         >
           Log In
         </button>
       </nav>
 
-      {/* Hero Section */}
-      <main className="relative z-10 pt-10 pb-20 sm:pt-20 max-w-7xl mx-auto px-6 flex flex-col lg:flex-row items-center gap-16 lg:gap-8">
+      {/* Main Content */}
+      <main className="relative z-10 max-w-6xl mx-auto px-6 flex flex-col items-center pb-20">
         
-        {/* Left: Copy */}
-        <div className="flex-1 text-center lg:text-left space-y-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium uppercase tracking-wider">
-            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"/>
-            Secure by Design
-          </div>
+        {/* 1. THE 3D PHONE (Now at Top) */}
+        <div className="w-full flex justify-center perspective-1000 py-12 sm:py-16">
+           <div className="relative w-[280px] h-[580px] bg-white rounded-[3.5rem] border-[8px] border-[#eef1f5] shadow-[0_50px_100px_-20px_rgba(50,50,93,0.15),0_30px_60px_-30px_rgba(0,0,0,0.15),inset_0_-2px_6px_rgba(0,0,0,0.05)] animate-float-phone preserve-3d ring-1 ring-slate-900/5">
+              
+              {/* Phone Reflection/Gloss */}
+              <div className="absolute inset-0 rounded-[3rem] bg-gradient-to-tr from-white/60 to-transparent pointer-events-none z-20" />
+              
+              {/* Buttons */}
+              <div className="absolute top-24 -right-3 w-1 h-16 bg-slate-200 rounded-r-md" />
+              <div className="absolute top-24 -left-3 w-1 h-10 bg-slate-200 rounded-l-md" />
+              <div className="absolute top-36 -left-3 w-1 h-10 bg-slate-200 rounded-l-md" />
+              
+              {/* Notch */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-7 bg-[#eef1f5] rounded-b-2xl z-30 flex justify-center items-center">
+                  <div className="w-12 h-1.5 bg-slate-300 rounded-full opacity-50" />
+              </div>
+              
+              {/* Screen Content (Light Mode UI) */}
+              <div className="absolute inset-1 bg-[#FBF8F3] rounded-[3.2rem] overflow-hidden flex flex-col shadow-inner">
+                 {/* App Header */}
+                 <div className="h-20 bg-white flex items-end pb-4 px-6 justify-between border-b border-slate-100">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 animate-pulse" />
+                    <div className="h-4 w-24 bg-slate-100 rounded" />
+                 </div>
+                 
+                 {/* App Body */}
+                 <div className="flex-1 p-5 space-y-6">
+                    <div className="space-y-2">
+                        <div className="h-6 w-3/4 bg-slate-200/50 rounded" />
+                        <div className="h-3 w-1/2 bg-slate-200/30 rounded" />
+                    </div>
+                    
+                    {/* The Typing/Encrypting Area - Light Mode */}
+                    <div className="p-5 rounded-2xl bg-white shadow-sm border border-slate-100 min-h-[220px] font-serif text-lg relative overflow-hidden flex flex-col">
+                        <div className="text-xs font-sans uppercase tracking-wider text-slate-300 mb-4">Nov 18, 2025</div>
+                        
+                        {demoStep === 0 && (
+                            <div className="text-slate-700 leading-relaxed">
+                                My deepest secret is<span className="typing-cursor border-indigo-500">|</span>
+                            </div>
+                        )}
+                        {demoStep === 1 && (
+                            <div className="break-all animate-matrix text-emerald-600 font-mono text-xs leading-relaxed opacity-80">
+                                0x9F3a2B1c8D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e
+                            </div>
+                        )}
+                        {demoStep === 2 && (
+                            <div className="flex flex-1 items-center justify-center flex-col gap-3">
+                                <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Secure</span>
+                            </div>
+                        )}
+                    </div>
+                 </div>
+                 
+                 {/* Home Indicator */}
+                 <div className="h-6 w-full flex justify-center items-start pt-1">
+                    <div className="w-1/3 h-1 bg-slate-300 rounded-full" />
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        {/* 2. Hero Text */}
+        <div className="text-center space-y-8 max-w-2xl">
           
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold font-serif leading-[1.1] tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400">
-            Your thoughts.<br/>
-            Encrypted.<br/>
-            Forever.
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold font-serif leading-[1.1] tracking-tight text-slate-900">
+            Your <span className="text-indigo-600 inline-block min-w-[200px] border-b-4 border-indigo-200">{displayedText}</span><br/>
+            Encrypted. Forever.
           </h1>
           
-          <p className="text-lg text-slate-400 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-            The only journal with true client-side encryption and biometric security. 
-            We can't read your data even if we wanted to.
+          <p className="text-lg sm:text-xl text-slate-500 leading-relaxed max-w-lg mx-auto">
+            Write freely in a beautiful, private space. Secured with military-grade encryption that only <strong>you</strong> hold the keys to.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
+          <div className="flex flex-col sm:flex-row items-center gap-4 justify-center pt-4">
             <button 
               onClick={onGetStarted}
-              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-lg transition-all hover:scale-105 shadow-xl shadow-indigo-500/25 flex items-center gap-2"
+              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-lg transition-all hover:scale-105 hover:-translate-y-1 shadow-xl shadow-indigo-200 flex items-center gap-2"
             >
-              Start Writing
+              Get Started for Free
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </button>
           </div>
           
-          <div className="pt-8 flex items-center justify-center lg:justify-start gap-6 opacity-50 grayscale hover:grayscale-0 transition-all">
-             <div className="text-xs font-mono text-slate-500 border border-slate-700 px-2 py-1 rounded">AES-GCM 256</div>
-             <div className="text-xs font-mono text-slate-500 border border-slate-700 px-2 py-1 rounded">PBKDF2 SHA-256</div>
-             <div className="text-xs font-mono text-slate-500 border border-slate-700 px-2 py-1 rounded">WebAuthn PRF</div>
+          <div className="pt-10 flex flex-wrap justify-center gap-x-8 gap-y-4 opacity-60 text-slate-400 font-medium text-sm">
+             <div className="flex items-center gap-2">
+                 <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                 End-to-End Encrypted
+             </div>
+             <div className="flex items-center gap-2">
+                 <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                 Biometric Lock
+             </div>
+             <div className="flex items-center gap-2">
+                 <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                 Local First
+             </div>
           </div>
         </div>
 
-        {/* Right: 3D Phone Animation */}
-        <div className="flex-1 w-full max-w-md lg:max-w-full flex justify-center perspective-1000">
-           <div className="relative w-[300px] h-[600px] bg-slate-900 rounded-[3rem] border-8 border-slate-800 shadow-2xl animate-float-phone preserve-3d ring-1 ring-slate-700/50">
-              {/* Phone Reflection/Gloss */}
-              <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-tr from-white/5 to-transparent pointer-events-none z-20" />
-              
-              {/* Notch */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-7 bg-slate-800 rounded-b-2xl z-30" />
-              
-              {/* Screen Content */}
-              <div className="absolute inset-2 bg-slate-950 rounded-[2.5rem] overflow-hidden flex flex-col">
-                 {/* App Header */}
-                 <div className="h-20 bg-slate-900 flex items-end pb-4 px-6 justify-between border-b border-slate-800">
-                    <div className="w-8 h-8 rounded-full bg-slate-800 animate-pulse" />
-                    <div className="h-4 w-24 bg-slate-800 rounded" />
-                 </div>
-                 
-                 {/* App Body */}
-                 <div className="flex-1 p-6 space-y-6">
-                    <div className="space-y-2">
-                        <div className="h-8 w-3/4 bg-slate-800/50 rounded" />
-                        <div className="h-4 w-1/2 bg-slate-800/30 rounded" />
-                    </div>
-                    
-                    {/* The Typing/Encrypting Area */}
-                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 min-h-[200px] font-mono text-sm relative overflow-hidden">
-                        {demoStep === 0 && (
-                            <div className="text-slate-300">
-                                My deepest secret is<span className="typing-cursor">|</span>
-                            </div>
-                        )}
-                        {demoStep === 1 && (
-                            <div className="break-all animate-matrix text-green-500 text-xs leading-relaxed">
-                                0x9F3a2B1c8D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e
-                            </div>
-                        )}
-                        {demoStep === 2 && (
-                            <div className="flex items-center justify-center h-full text-slate-500 flex-col gap-2 h-[200px]">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                                </svg>
-                                <span className="text-xs font-bold uppercase tracking-widest">Locked</span>
-                            </div>
-                        )}
-                    </div>
-                 </div>
-                 
-                 {/* App Footer / Home Bar */}
-                 <div className="h-8 bg-slate-900 flex justify-center items-center pt-2">
-                    <div className="w-1/3 h-1 bg-slate-700 rounded-full" />
-                 </div>
-              </div>
-           </div>
-        </div>
       </main>
     </div>
   );
