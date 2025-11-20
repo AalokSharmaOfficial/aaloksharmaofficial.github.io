@@ -143,7 +143,8 @@ const Auth: React.FC<AuthProps> = ({ onBackToHome }) => {
         <Monkey 
           focusState={focusState}
           emailProgress={emailProgress}
-          typingCounter={typingCounter} 
+          typingCounter={typingCounter}
+          isPasswordVisible={isPasswordVisible}
         />
         <div className="text-center">
             <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-200">Diary</h1>
