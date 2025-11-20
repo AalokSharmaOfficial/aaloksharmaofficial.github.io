@@ -14,21 +14,23 @@ const Monkey: React.FC<MonkeyProps> = ({ focusState, emailProgress, typingCounte
   const getHeadTransform = () => {
     if (focusState === 'email') {
       // Tilt head based on email input length, slightly clamped
+      // Using standard CSS rotate(deg) syntax
       const angle = Math.max(-8, Math.min(8, (emailProgress * 16) - 8));
-      return `rotate(${angle} 50 55)`;
+      return `rotate(${angle}deg)`;
     }
-    return 'rotate(0 50 55)';
+    return 'rotate(0deg)';
   };
 
   const getPupilTransform = () => {
     if (focusState === 'password') {
-        return 'translate(0, 5)'; // Look down
+        return 'translate(0px, 5px)'; // Look down
     }
     if (focusState === 'email') {
+        // Jitter pupils slightly while typing to simulate reading/tracking
         const offset = typingCounter % 2 === 0 ? -1.5 : 1.5;
-        return `translate(${offset}, 5)`;
+        return `translate(${offset}px, 5px)`;
     }
-    return 'translate(0, 0)';
+    return 'translate(0px, 0px)';
   };
 
   const getHandTransform = () => {
@@ -38,9 +40,10 @@ const Monkey: React.FC<MonkeyProps> = ({ focusState, emailProgress, typingCounte
               return 'translateY(15px)';
           }
           // Hidden state: Hands fully up covering eyes
-          return 'translateY(0)'; 
+          return 'translateY(0px)'; 
       }
       // Idle/Email state: Hands hidden below
+      // With overflow: hidden on the SVG, these will be clipped
       return 'translateY(100px)';
   };
 
@@ -50,7 +53,11 @@ const Monkey: React.FC<MonkeyProps> = ({ focusState, emailProgress, typingCounte
       height="140" 
       viewBox="0 0 100 100" 
       className="mx-auto -mb-6" 
-      style={{ zIndex: 10, position: 'relative', overflow: 'visible' }}
+      style={{ 
+          zIndex: 10, 
+          position: 'relative', 
+          overflow: 'hidden' // Changed to hidden to prevent hands covering inputs
+      }}
       aria-hidden="true"
     >
       <defs>
@@ -89,8 +96,11 @@ const Monkey: React.FC<MonkeyProps> = ({ focusState, emailProgress, typingCounte
       {/* --- Head Group --- */}
       <g 
         id="head-group" 
-        style={{ transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' }} 
-        transform={getHeadTransform()}
+        style={{ 
+          transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          transform: getHeadTransform(),
+          transformOrigin: '50px 55px' // Explicit origin allows correct CSS rotation
+        }} 
         filter="url(#softShadow)"
       >
         {/* Ears (Back) */}
@@ -119,7 +129,7 @@ const Monkey: React.FC<MonkeyProps> = ({ focusState, emailProgress, typingCounte
             <circle cx="64" cy="52" r="9" fill="white" />
             
             {/* Pupils with Tracking */}
-            <g style={{ transition: 'transform 0.1s ease-out' }} transform={getPupilTransform()}>
+            <g style={{ transition: 'transform 0.1s ease-out', transform: getPupilTransform() }}>
                 <circle cx="36" cy="52" r="4" fill="#1E293B" />
                 <circle cx="64" cy="52" r="4" fill="#1E293B" />
                 {/* Eye Glint/Shine */}
@@ -149,8 +159,10 @@ const Monkey: React.FC<MonkeyProps> = ({ focusState, emailProgress, typingCounte
       */}
       <g 
         id="hands-group" 
-        style={{ transition: 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)' }} 
-        transform={getHandTransform()}
+        style={{ 
+            transition: 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)',
+            transform: getHandTransform()
+        }} 
         filter="url(#softShadow)"
       >
           {/* Left Hand */}
