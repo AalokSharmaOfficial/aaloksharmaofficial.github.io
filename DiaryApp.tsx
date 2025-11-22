@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabaseClient';
@@ -388,7 +389,10 @@ const DiaryApp: React.FC<DiaryAppProps> = ({ session, theme, onToggleTheme }) =>
   const handleInitiateSave = useCallback((entryData: Omit<DiaryEntry, 'id' | 'owner_id'>) => {
     const existingTags = entryData.tags || [];
     const suggestions = generateSmartTags(entryData.content);
-    const newSuggestions = suggestions.filter(tag => !existingTags.includes(tag));
+    // Updated logic: Case-insensitive check to prevent duplicates (e.g., "Travel" vs "travel")
+    const newSuggestions = suggestions.filter(tag => 
+        !existingTags.some(existingTag => existingTag.toLowerCase() === tag.toLowerCase())
+    );
 
     if (newSuggestions.length > 0) {
         setPendingEntrySave(entryData);

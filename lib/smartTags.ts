@@ -7,7 +7,7 @@ export const generateSmartTags = (htmlContent: string): string[] => {
     const doc = new DOMParser().parseFromString(htmlContent, 'text/html');
     const text = doc.body.textContent || "";
 
-    if (text.length < 20) return []; // Too short to analyze
+    if (text.length < 10) return []; // Lowered threshold to 10 chars for better responsiveness
 
     const docNlp = nlp(text);
 
