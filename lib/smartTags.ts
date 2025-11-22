@@ -3,33 +3,66 @@
 import nlp from 'compromise';
 
 export const generateSmartTags = (htmlContent: string): string[] => {
-    // 1. Strip HTML to get raw text
-    const doc = new DOMParser().parseFromString(htmlContent, 'text/html');
-    const text = doc.body.textContent || "";
+    try {
+        // 1. Strip HTML to get raw text
+        const doc = new DOMParser().parseFromString(htmlContent, 'text/html');
+        const text = doc.body.textContent || "";
 
-    if (text.length < 10) return []; // Lowered threshold to 10 chars for better responsiveness
+        console.log("SmartTags: Analyzing text length:", text.length);
 
-    const docNlp = nlp(text);
+        // Lower threshold to allow short quick entries
+        if (text.length < 3) return [];
 
-    // 2. Extract relevant entities
-    // We look for #Topic (keywords), #Place (locations), #Person (names), #Organization
-    const topics = docNlp.topics().out('array');
-    const places = docNlp.places().out('array');
-    const people = docNlp.people().out('array');
+        const rawTags: string[] = [];
 
-    // 3. Combine and normalize
-    const rawTags = [...topics, ...places, ...people];
+        // 2. Hashtag Extraction (e.g. #Travel, #Food)
+        // This allows users to explicitly tag within the text
+        const hashtagRegex = /#(\w+)/g;
+        let match;
+        while ((match = hashtagRegex.exec(text)) !== null) {
+            if (match[1].length > 1) {
+                rawTags.push(match[1]);
+            }
+        }
 
-    // 4. Clean up tags
-    const cleanedTags = rawTags
-        .map((tag: string) => tag.trim())
-        // Remove very short tags or common stop words that might slip through
-        .filter((tag: string) => tag.length > 2)
-        // Capitalize first letter of each word for consistency
-        .map((tag: string) => 
-            tag.replace(/\w\S*/g, (w) => (w.replace(/^\w/, (c) => c.toUpperCase())))
-        );
+        // 3. NLP Extraction
+        if (nlp) {
+            const docNlp = nlp(text);
+            
+            // Get specific entities
+            const topics = docNlp.topics().out('array');
+            const places = docNlp.places().out('array');
+            const people = docNlp.people().out('array');
+            const organizations = docNlp.organizations().out('array');
+            
+            // "ProperNoun" catches capitalized words that might not be famous enough to be a "Topic"
+            // This makes it much more responsive for personal things like "Dad", "Rover", "Main Street".
+            const properNouns = docNlp.match('#ProperNoun').out('array');
 
-    // 5. Deduplicate
-    return Array.from(new Set(cleanedTags));
+            rawTags.push(...topics, ...places, ...people, ...organizations, ...properNouns);
+        } else {
+             console.warn("SmartTags: 'compromise' library not loaded. Only hashtags will work.");
+        }
+
+        // 4. Clean and Normalize
+        const cleanedTags = rawTags
+            .map((tag: string) => tag.trim())
+            // Remove punctuation from start/end
+            .map((tag: string) => tag.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, ''))
+            .filter((tag: string) => tag.length > 2) // Filter out tiny noise
+            // Convert to Title Case (e.g. "paris" -> "Paris")
+            .map((tag: string) => 
+                tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()
+            );
+
+        // 5. Deduplicate
+        const uniqueTags = Array.from(new Set(cleanedTags));
+        
+        console.log("SmartTags: Suggestions found:", uniqueTags);
+        return uniqueTags;
+
+    } catch (err) {
+        console.error("SmartTags: Error generating tags", err);
+        return [];
+    }
 };
