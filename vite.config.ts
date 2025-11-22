@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   // For a repository named `<username>.github.io`, the base path should be '/'.
   // This ensures that assets are loaded correctly from the root of the domain.
-  base: '/diary/',
+  base: '/diary/', // test change
   build: {
     rollupOptions: {
       // Mark these as external so Vite doesn't try to bundle them.
